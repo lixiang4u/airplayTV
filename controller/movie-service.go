@@ -22,7 +22,7 @@ func movieListBySearch(query, page string) model.Pager {
 		tag := element.ChildText(".nostag")
 		actors := element.ChildText(".inzhuy")
 
-		pager.List = append(pager.List, model.SearchList{
+		pager.List = append(pager.List, model.MovieInfo{
 			Id:     handleUrlToId(url),
 			Name:   name,
 			Thumb:  thumb,
@@ -72,7 +72,7 @@ func movieListByTag(tagName, page string) model.Pager {
 		actors := element.ChildText(".inzhuy")
 		resolution := element.ChildText(".hdinfo span")
 
-		pager.List = append(pager.List, model.SearchList{
+		pager.List = append(pager.List, model.MovieInfo{
 			Id:         handleUrlToId(url),
 			Name:       name,
 			Thumb:      thumb,
@@ -109,4 +109,36 @@ func movieListByTag(tagName, page string) model.Pager {
 	}
 
 	return pager
+}
+
+func movieInfoById(id string) model.MovieInfo {
+	var info = model.MovieInfo{}
+
+	c := colly.NewCollector()
+
+	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
+		element.ForEach("a", func(i int, element *colly.HTMLElement) {
+			info.Links = append(info.Links, model.Link{
+				Name: element.Text,
+				Url:  element.Attr("href"),
+			})
+		})
+	})
+
+	c.OnHTML(".dyxingq", func(element *colly.HTMLElement) {
+		info.Thumb = element.ChildAttr(".dyimg img", "src")
+		info.Name = element.ChildText(".moviedteail_tt h1")
+		info.Intro = element.ChildText(".yp_context")
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		fmt.Println("Visiting", request.URL.String())
+	})
+
+	err := c.Visit(fmt.Sprintf("https://www.czspp.com/movie/%s.html", id))
+	if err != nil {
+		fmt.Println("[ERR]", err.Error())
+	}
+
+	return info
 }

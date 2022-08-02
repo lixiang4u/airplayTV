@@ -61,7 +61,8 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
 	r.GET("/api/info/:id", new(controller.ResourceController).ListByTag)
 
-	r.GET("/home", new(controller.HomeController).Home) // 测试页
+	r.GET("/home", new(controller.ResourceController).Home)
+	r.GET("/info/:id", new(controller.ResourceController).Info)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)

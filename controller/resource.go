@@ -37,3 +37,23 @@ func handleUrlToId(url string) string {
 func Info() {
 
 }
+
+func (p ResourceController) Home(ctx *gin.Context) {
+	var page = ctx.Query("p")
+
+	ctx.HTML(http.StatusOK, "home/home.html", gin.H{
+		"data": movieListByTag("zuixindianying", page),
+	})
+}
+
+func (p ResourceController) Info(ctx *gin.Context) {
+	var id = ctx.Param("id")
+
+	var d = movieInfoById(id)
+	ctx.JSON(http.StatusOK, d)
+	return
+
+	//ctx.HTML(http.StatusOK, "home/home.html", gin.H{
+	//	"data": movieListByTag("zuixindianying", d),
+	//})
+}
