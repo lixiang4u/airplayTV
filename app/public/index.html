@@ -47,10 +47,11 @@
     let ws = null;
     let content = document.getElementById('content');
     let qrcode = null;
+    let wsAddr = '//tv.artools.cc/ws';
 
     function newWS() {
         // 注册websocket事件
-        ws = new WebSocket('ws://127.0.0.1:8089/ws');
+        ws = new WebSocket(wsAddr);
         ws.onopen = function (event) {
             console.log('[onopen]', event);
 
@@ -134,7 +135,17 @@
 
     }
 
+    function initWSAddr() {
+        let protocol = location.protocol;
+        if (protocol == 'https:') {
+            wsAddr = "wss:" + wsAddr;
+        } else {
+            wsAddr = "ws:" + wsAddr;
+        }
+        return wsAddr;
+    }
 
+    initWSAddr();
     newWS();
 
 </script>
