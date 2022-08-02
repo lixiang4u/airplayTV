@@ -1,45 +1,21 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/lixiang4u/ShotTv-api/controller"
-	go_websocket "github.com/lixiang4u/go-websocket"
+	"github.com/lixiang4u/ShotTv-api/cmd"
+	"github.com/spf13/viper"
+	"log"
 )
+
+func init() {
+	viper.SetConfigFile("config.toml")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
 
 func main() {
 
-	//_ = autotls.Run(router.NewRouter(), "example1.com")
-	_ = NewRouter().Run(":8089")
+	cmd.Execute()
 
-}
-
-// 初始化websocket
-func NewRouterW() go_websocket.WSWrapper {
-	var ws = go_websocket.WSWrapper{}
-	ws.Config.Debug = true
-
-	ws.On("info", new(controller.HomeController).InfoW)           //注册列表数据查询
-	ws.On("list", new(controller.HomeController).ListW)           //注册列表数据查询
-	ws.On("broadcast", new(controller.HomeController).BroadcastW) //注册广播消息
-
-	return ws
-}
-
-// 新建路由表
-func NewRouter() *gin.Engine {
-	r := gin.Default()
-	ws := NewRouterW()
-
-	r.Static("/html", "./app/public/")
-	r.Static("/upload", "./app/upload/")
-	r.Static("/static", "./app/static/")
-
-	r.GET("/", new(controller.HomeController).Index)      // 默认首页
-	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
-	r.POST("/play", new(controller.HomeController).Play)
-	r.GET("/ws", func(context *gin.Context) {
-		ws.Run(context.Writer, context.Request, nil)
-	})
-
-	return r
 }

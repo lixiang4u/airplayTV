@@ -11,14 +11,6 @@ import (
 var orm gorose.IOrm
 
 // mysql示例, 记得导入mysql驱动 github.com/go-sql-driver/mysql
-func init() {
-	viper.SetConfigFile("config.toml")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
 func Connect() gorose.IOrm {
 	// dsn: "root:root@tcp(localhost:3306)/test?charset=utf8mb4&parseTime=true"
 	var dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
