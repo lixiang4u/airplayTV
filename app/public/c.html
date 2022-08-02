@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>控制TV端</title>
+</head>
+<body>
+
+<input type="text" id="msg" name="msg" placeholder="client id">
+<input type="button" id="submit" name="submit" value="submit">
+
+<div id="qrcode"></div>
+
+<pre id="content"></pre>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script type="text/javascript">
+
+    // 扫描输入二维码中的client_id
+    // 发送播放指令
+    $('#submit').on('click', function () {
+        let msg = $('#msg').val();
+        console.log(msg);
+
+        $.ajax({
+            type: 'post',
+            url: '/play',
+            data: {
+                client_id: msg,
+            },
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+            },
+            error: function (a, b, c) {
+                console.log(a, b, c);
+            }
+        })
+
+    })
+
+</script>
+
+</body>
+</html>

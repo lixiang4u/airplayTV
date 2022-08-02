@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>TV端</title>
+    <style type="text/css">
+        .play-box {
+            width: 600px;
+            height: 320px;
+            margin: 0 auto;
+            border: 1px dashed rgba(195, 195, 195, 0.45);
+        }
+
+        .tips {
+            position: fixed;
+        }
+    </style>
+</head>
+<body>
+
+
+<div class="tips">
+    <div id="qrcode"></div>
+    <pre id="content">something here.</pre>
+</div>
+
+
+<div class="play-box">
+    <div id="dplayer"></div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flv.js/dist/flv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dashjs/dist/dash.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/webtorrent/latest/webtorrent.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pearplayer"></script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+
+
+<script type="text/javascript">
+
+    let ws = null;
+    let content = document.getElementById('content');
+    let qrcode = null;
+
+    function newWS() {
+        // 注册websocket事件
+        ws = new WebSocket('ws://127.0.0.1:8089/ws');
+        ws.onopen = function (event) {
+            console.log('[onopen]', event);
+
+            ws.send(JSON.stringify({"event": "list", "data": null}));
+            ws.send(JSON.stringify({"event": "info", "data": null}));
+
+        };
+        ws.onmessage = function (msg) {
+            console.log('[onmessage]', msg);
+
+            let obj = JSON.parse(msg.data);
+            let eventName = obj.event ?? null;
+
+            switch (eventName) {
+                case 'info':
+                    newQrCode(obj);
+                    break;
+                case 'play':
+                    play(obj);// 播放
+                    break;
+                default:
+                    break;
+            }
+
+            updateMsg(msg.data)
+
+        };
+        ws.onclose = function (event) {
+            console.log('[onclose]', event);
+
+            setTimeout(newWS, 2000);
+
+        };
+        ws.onerror = function (event) {
+            console.log('[onerror]', event);
+        };
+    }
+
+    function updateMsg(msg) {
+        content.innerText = "【收到消息】" + (new Date()) + "\t" + msg + "\r\n" + content.innerText;
+    }
+
+    function newQrCode(obj) {
+        console.log('[qrcode]', qrcode);
+        if (qrcode) {
+            // qrcode.clear();
+            document.getElementById('qrcode').innerHTML = '';
+            document.getElementById('content').innerHTML = '';
+        }
+
+        qrcode = new QRCode("qrcode", {
+            text: JSON.stringify({"client_id": obj.client_id, "timestamp": obj.timestamp}),
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+
+    function play(obj) {
+        console.log('[playing...]');
+        updateMsg("正在播放视频，地址：" + obj.url);
+        const dp = new DPlayer({
+            container: document.getElementById('dplayer'),
+            video: {
+                url: obj.url,
+                autoplay: true,
+                // url:'https://hll.aliyundrive.asia/vtt/movie1/m/03/神偷奶爸3.m3u8',
+                type: 'customHls',
+                customType: {
+                    customHls: function (video, player) {
+                        const hls = new Hls();
+                        hls.loadSource(video.src);
+                        hls.attachMedia(video);
+                    },
+                },
+
+            }
+        });
+
+    }
+
+
+    newWS();
+
+</script>
+
+</body>
+</html>
