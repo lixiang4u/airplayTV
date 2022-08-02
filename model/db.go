@@ -29,6 +29,7 @@ func Connect() gorose.IOrm {
 		log.Fatalln(err)
 	}
 	orm = engin.NewOrm()
+	return orm
 }
 
 func NewEngin() gorose.IOrm {

@@ -52,6 +52,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/", new(controller.HomeController).Index)      // 默认首页
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
 	r.POST("/play", new(controller.HomeController).Play)
+	r.GET("/search", new(controller.ResourceController).Search)
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})
