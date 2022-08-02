@@ -45,16 +45,24 @@ func NewRouter() *gin.Engine {
 	r := gin.Default()
 	ws := NewRouterW()
 
+	log.Println("[p]", fmt.Sprintf("%s/app/view/**/*", util.AppPath()))
+	r.LoadHTMLGlob(fmt.Sprintf("%s/app/view/**/*", util.AppPath()))
+	//r.LoadHTMLGlob("D:\\repo\\ShotTv-api\\app\\view\\**\\*")
+
 	r.Static("/html", "./app/public/")
 	r.Static("/upload", "./app/upload/")
 	r.Static("/static", "./app/static/")
 
 	r.GET("/", new(controller.HomeController).Index)      // 默认首页
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
-	r.POST("/play", new(controller.HomeController).Play)
-	r.GET("/search", new(controller.ResourceController).Search)
-	r.GET("/tag", new(controller.ResourceController).ListByTag)
-	r.GET("/tag/:tagName", new(controller.ResourceController).ListByTag)
+	r.POST("/api/play", new(controller.HomeController).Play)
+	r.GET("/api/search", new(controller.ResourceController).Search)
+	r.GET("/api/tag", new(controller.ResourceController).ListByTag)
+	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
+	r.GET("/api/info/:id", new(controller.ResourceController).ListByTag)
+
+	r.GET("/home", new(controller.HomeController).Home) // 测试页
+
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})

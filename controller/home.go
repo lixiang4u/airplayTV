@@ -55,3 +55,10 @@ func (p HomeController) Play(c *gin.Context) {
 	go_websocket.WSendMessage(clientId, websocket.TextMessage, b)
 	c.JSON(http.StatusOK, gin.H{"/path": "/hello", "time": time.Now().String()})
 }
+
+func (p HomeController) Home(c *gin.Context) {
+	c.HTML(http.StatusOK, "home/home.html", gin.H{
+		"title": "sdsdsdsdsd",
+	})
+
+}
