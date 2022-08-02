@@ -18,6 +18,21 @@
             position: fixed;
         }
     </style>
+    <script type="text/javascript">
+
+        window.onerror = function (message, url, line, col, error) {
+
+            let str =
+                "[message]" + message + "\r\n" +
+                "[url]" + url + "\r\n" +
+                "[line]" + line + "\r\n" +
+                "[col]" + col + "\r\n" +
+                "[error]" + error + "\r\n";
+
+            alert(str);
+        }
+
+    </script>
 </head>
 <body>
 
@@ -63,7 +78,7 @@
             console.log('[onmessage]', msg);
 
             let obj = JSON.parse(msg.data);
-            let eventName = obj.event ?? null;
+            let eventName = (obj && obj.hasOwnProperty('event')) ? obj.event : null;
 
             switch (eventName) {
                 case 'info':
