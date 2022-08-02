@@ -30,8 +30,13 @@ func NewRouter() *gin.Engine {
 	r := gin.Default()
 	ws := NewRouterW()
 
+	r.Static("/html", "./app/public/")
+	r.Static("/upload", "./app/upload/")
+	r.Static("/static", "./app/static/")
+
 	r.GET("/", new(controller.HomeController).Index)      // 默认首页
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
+	r.POST("/play", new(controller.HomeController).Play)
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})
