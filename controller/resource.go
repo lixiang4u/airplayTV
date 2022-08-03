@@ -49,7 +49,8 @@ func (p ResourceController) Home(ctx *gin.Context) {
 	var tvId = ctx.Query("tv_id")
 
 	if len(tvId) > 8 {
-		ctx.SetCookie("tv_id", tvId[0:8], 0, "", "", false, false)
+		ctx.SetCookie("tv_id", tvId, 0, "", "", false, false)
+		ctx.Redirect(302, ctx.FullPath()) //HTTP重定向:301(永久)与302(临时)
 	}
 	tvId, _ = ctx.Cookie("tv_id")
 
