@@ -129,11 +129,11 @@
 
     function play(obj) {
         console.log('[playing...]');
-        updateMsg("正在播放视频，地址：" + obj.url);
+        updateMsg("正在播放视频，地址：" + obj.video.url);
         const dp = new DPlayer({
             container: document.getElementById('dplayer'),
             video: {
-                url: obj.url,
+                url: obj.video.url,
                 autoplay: true,
                 // url:'https://hll.aliyundrive.asia/vtt/movie1/m/03/神偷奶爸3.m3u8',
                 type: 'customHls',

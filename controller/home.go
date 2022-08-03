@@ -44,14 +44,15 @@ func (p HomeController) InfoW(clientId string, ws *websocket.Conn, messageType i
 
 func (p HomeController) Play(c *gin.Context) {
 	var clientId = c.PostForm("client_id")
+	var id = c.PostForm("id")
 
 	var d = gin.H{
 		"event":     "play",
 		"client_id": clientId,
-		"url":       "/static/js/stnb3.m3u8",
+		"video":     movieVideoById(id),
 		"timestamp": time.Now().Unix(),
 	}
 	b, _ := json.MarshalIndent(d, "", "	")
 	go_websocket.WSendMessage(clientId, websocket.TextMessage, b)
-	c.JSON(http.StatusOK, gin.H{"/path": "/hello", "time": time.Now().String()})
+	c.JSON(http.StatusOK, gin.H{})
 }
