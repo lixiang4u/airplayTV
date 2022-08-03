@@ -51,12 +51,12 @@ func movieListBySearch(query, page string) model.Pager {
 	})
 
 	c.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL.String())
+		log.Println("Visiting", request.URL.String())
 	})
 
 	err := c.Visit(fmt.Sprintf("https://www.czspp.com/xssearch?q=%s&p=%s", query, page))
 	if err != nil {
-		fmt.Println("[ERR]", err.Error())
+		log.Println("[visit.error]", err.Error())
 	}
 
 	return pager
@@ -104,14 +104,14 @@ func movieListByTag(tagName, page string) model.Pager {
 	})
 
 	c.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL.String())
+		log.Println("Visiting", request.URL.String())
 	})
 
 	log.Println(fmt.Sprintf("https://www.czspp.com/%s/page/%d", tagName, _page))
 
 	err := c.Visit(fmt.Sprintf("https://www.czspp.com/%s/page/%d", tagName, _page))
 	if err != nil {
-		fmt.Println("[ERR]", err.Error())
+		log.Println("[visit.error]", err.Error())
 	}
 
 	return pager
@@ -139,12 +139,12 @@ func movieInfoById(id string) model.MovieInfo {
 	})
 
 	c.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL.String())
+		log.Println("Visiting", request.URL.String())
 	})
 
 	err := c.Visit(fmt.Sprintf("https://www.czspp.com/movie/%s.html", id))
 	if err != nil {
-		fmt.Println("[ERR]", err.Error())
+		log.Println("[visit.error]", err.Error())
 	}
 
 	return info
@@ -157,7 +157,7 @@ func movieVideoById(id string) model.Video {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL.String())
+		log.Println("Visiting", request.URL.String())
 	})
 
 	c.OnResponse(func(response *colly.Response) {
@@ -172,14 +172,14 @@ func movieVideoById(id string) model.Video {
 		if findLine != "" {
 			video, err = parseVideo(id, findLine)
 			if err != nil {
-				fmt.Println("[parse.error]", err)
+				log.Println("[parse.video.error]", err)
 			}
 		}
 	})
 
 	err = c.Visit(fmt.Sprintf("https://www.czspp.com/v_play/%s.html", id))
 	if err != nil {
-		fmt.Println("[ERR]", err.Error())
+		log.Println("[ERR]", err.Error())
 	}
 
 	return video
@@ -275,10 +275,14 @@ func parseVideo(id, js string) (model.Video, error) {
 }
 
 func downloadFile(id, url, local string) (err error) {
+	if util.PathExist(local) {
+		return
+	}
+
 	c := colly.NewCollector()
 
 	c.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL.String())
+		log.Println("Visiting", request.URL.String())
 	})
 
 	c.OnResponse(func(response *colly.Response) {
@@ -293,7 +297,7 @@ func downloadFile(id, url, local string) (err error) {
 
 	err = c.Visit(url)
 	if err != nil {
-		fmt.Println("[ERR]", err.Error())
+		log.Println("[visit.error]", err.Error())
 	}
 
 	return err
