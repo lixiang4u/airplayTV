@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/ShotTv-api/model"
+	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -119,6 +123,7 @@ func movieInfoById(id string) model.MovieInfo {
 	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {
 			info.Links = append(info.Links, model.Link{
+				Id:   handleUrlToId2(element.Attr("href")),
 				Name: element.Text,
 				Url:  element.Attr("href"),
 			})
@@ -141,4 +146,111 @@ func movieInfoById(id string) model.MovieInfo {
 	}
 
 	return info
+}
+
+func movieVideoById(id string) model.Video {
+	var video = model.Video{}
+
+	c := colly.NewCollector()
+
+	c.OnRequest(func(request *colly.Request) {
+		fmt.Println("Visiting", request.URL.String())
+	})
+
+	c.OnResponse(func(response *colly.Response) {
+		var findLine = ""
+		tmplist := strings.Split(string(response.Body), "\n")
+		for _, line := range tmplist {
+			if strings.Contains(line, "md5.AES.decrypt") {
+				findLine = line
+				break
+			}
+		}
+		if findLine != "" {
+			video, _ = parseVideo(id, findLine)
+		}
+	})
+
+	err := c.Visit(fmt.Sprintf("https://www.czspp.com/v_play/%s.html", id))
+	if err != nil {
+		fmt.Println("[ERR]", err.Error())
+	}
+
+	return video
+}
+
+func parseVideo(id, js string) (model.Video, error) {
+	var video = model.Video{}
+	tmpList := strings.Split(strings.TrimSpace(js), ";")
+
+	var data = ""
+	var key = ""
+	var iv = ""
+	for index, str := range tmpList {
+		if index == 0 {
+			regex := regexp.MustCompile(`"\S+"`)
+			data = strings.Trim(regex.FindString(str), `"`)
+			continue
+		}
+		if index == 1 {
+			regex := regexp.MustCompile(`"(\S+)"`)
+			matchList := regex.FindStringSubmatch(str)
+			if len(matchList) > 0 {
+				key = matchList[len(matchList)-1]
+			}
+			continue
+		}
+		if index == 2 {
+			regex := regexp.MustCompile(`\((\S+)\)`)
+			matchList := regex.FindStringSubmatch(str)
+			if len(matchList) > 0 {
+				iv = matchList[len(matchList)-1]
+			}
+			continue
+		}
+	}
+
+	log.Println(fmt.Sprintf("[parsing] key: %s, iv: %s", key, iv))
+
+	if key == "" && data == "" {
+		return video, errors.New("解析失败")
+	}
+	bs, err := util.DecryptByAes([]byte(key), []byte(iv), data)
+	if err != nil {
+		return video, errors.New("解密失败")
+	}
+	tmpList = strings.Split(string(bs), ";")
+	if len(tmpList) < 1 {
+		return video, errors.New("解密数据错误")
+	}
+
+	regex := regexp.MustCompile(`{url: "(\S+)",type:"(\S+)",pic:'(\S+)'}`)
+	matchList := regex.FindStringSubmatch(tmpList[0])
+
+	if len(matchList) < 1 {
+		return video, errors.New("解析视频信息失败")
+	}
+
+	video.Id = id
+
+	for index, m := range matchList {
+		switch index {
+		case 1:
+			video.Url = m
+			break
+		case 2:
+			video.Type = m
+			break
+		case 3:
+			video.Thumb = m
+			break
+		default:
+			break
+		}
+	}
+
+	bs, _ = json.Marshal(video)
+	log.Println(fmt.Sprintf("[video] %s", string(bs)))
+
+	return video, nil
 }

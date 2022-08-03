@@ -59,7 +59,8 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/search", new(controller.ResourceController).Search)
 	r.GET("/api/tag", new(controller.ResourceController).ListByTag)
 	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
-	r.GET("/api/info/:id", new(controller.ResourceController).ListByTag)
+	r.GET("/api/info/:id", new(controller.ResourceController).Info)
+	r.GET("/api/video/:id", new(controller.ResourceController).Video)
 
 	r.GET("/home", new(controller.ResourceController).Home)
 	r.GET("/info/:id", new(controller.ResourceController).Info)

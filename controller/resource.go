@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 type ResourceController struct {
@@ -34,6 +35,11 @@ func handleUrlToId(url string) string {
 	return regex.FindString(url)
 }
 
+func handleUrlToId2(url string) string {
+	tmpList := strings.Split(url, "/")
+	return strings.Trim(tmpList[len(tmpList)-1], ".html")
+}
+
 func Info() {
 
 }
@@ -56,4 +62,12 @@ func (p ResourceController) Info(ctx *gin.Context) {
 	//ctx.HTML(http.StatusOK, "home/home.html", gin.H{
 	//	"data": movieListByTag("zuixindianying", d),
 	//})
+}
+
+func (p ResourceController) Video(ctx *gin.Context) {
+	var id = ctx.Param("id")
+
+	var d = movieVideoById(id)
+	ctx.JSON(http.StatusOK, d)
+	return
 }
