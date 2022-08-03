@@ -44,7 +44,7 @@
             .video-list li {
                 text-align: center;
                 float: left;
-                padding: 8px 8px 8px 8px;
+                padding: 8px 12px 8px 12px;
                 list-style-type: none;
             }
 
@@ -80,6 +80,8 @@
     <div class="tips container">
         {{ if .tv_id }}
             关联TV：{{ .tv_id }}
+        {{ else }}
+            请先扫码关联TV
         {{ end}}
     </div>
 
