@@ -104,9 +104,11 @@
                     },
                     dataType: 'json',
                     success: function (data) {
+                        alert('已经发送播放信息到TV，请稍等');
                         console.log(data);
                     },
                     error: function (a, b, c) {
+                        alert('网络异常');
                         console.log(a, b, c);
                     }
                 });
