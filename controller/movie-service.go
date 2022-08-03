@@ -171,6 +171,10 @@ func movieVideoById(id string) model.Video {
 		}
 		if findLine != "" {
 			video, err = parseVideo(id, findLine)
+
+			bs, _ := json.MarshalIndent(video, "", "\t")
+			log.Println(fmt.Sprintf("[video] %s", string(bs)))
+
 			if err != nil {
 				log.Println("[parse.video.error]", err)
 			}
@@ -255,9 +259,6 @@ func parseVideo(id, js string) (model.Video, error) {
 			break
 		}
 	}
-
-	bs, _ = json.MarshalIndent(video, "", "\t")
-	log.Println(fmt.Sprintf("[video] %s", string(bs)))
 
 	var localFile = util.NewLocalVideoFileName(id, video.Source)
 
