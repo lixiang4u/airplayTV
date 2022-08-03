@@ -1,5 +1,6 @@
 [app]
     addr=":8089"
+    secret="050dbe0a78e6beb8ae598ec6b1582555"
 
 [mysql]
     host = "localhost"

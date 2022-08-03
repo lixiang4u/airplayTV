@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/lixiang4u/ShotTv-api/controller"
 	"github.com/lixiang4u/ShotTv-api/util"
@@ -43,6 +45,10 @@ func NewRouterW() go_websocket.WSWrapper {
 // 新建路由表
 func NewRouter() *gin.Engine {
 	r := gin.Default()
+
+	// 使用session中间件
+	r.Use(sessions.Sessions("shot_tv", cookie.NewStore([]byte(viper.GetString("app.secret")))))
+
 	ws := NewRouterW()
 
 	log.Println("[p]", fmt.Sprintf("%s/app/view/**/*", util.AppPath()))

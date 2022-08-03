@@ -46,9 +46,16 @@ func Info() {
 
 func (p ResourceController) Home(ctx *gin.Context) {
 	var page = ctx.Query("p")
+	var tvId = ctx.Query("tv_id")
+
+	if len(tvId) > 8 {
+		ctx.SetCookie("tv_id", tvId[0:8], 0, "", "", false, false)
+	}
+	tvId, _ = ctx.Cookie("tv_id")
 
 	ctx.HTML(http.StatusOK, "home/home.html", gin.H{
-		"data": movieListByTag("zuixindianying", page),
+		"data":  movieListByTag("zuixindianying", page),
+		"tv_id": tvId,
 	})
 }
 

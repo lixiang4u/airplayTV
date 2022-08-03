@@ -1,0 +1,104 @@
+{{ define "home/home.html" }}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name=viewport content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Home</title>
+
+        <style type="text/css">
+            body {
+                margin: 0;
+                font-size: 14px;
+                background-color: #f6f6f6;
+            }
+
+            .h60 {
+                width: 100%;
+                height: 60px;
+                clear: both;
+            }
+
+            .container {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 0 20px;
+            }
+
+            .tips {
+                width: 100%;
+                line-height: 42px;
+                border-color: #101010;
+                background-color: #222;
+                color: #9d9d9d;
+                position: fixed;
+                z-index: 99;
+
+            }
+
+            .video-list {
+                padding: 0;
+                margin: 0;
+            }
+
+            .video-list li {
+                text-align: center;
+                float: left;
+                padding: 8px 8px 8px 8px;
+                list-style-type: none;
+            }
+
+            .video-list li .hd {
+                display: block;
+                padding: 4px 5px;
+                color: #fff;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                margin-bottom: 3px;
+                position: absolute;
+                background-color: rgba(255, 92, 138, 0.85);
+            }
+
+            .video-list li img {
+                width: 156px;
+                height: 220px;
+            }
+
+            .video-list li p {
+                width: 156px;
+                margin: 10px 0 20px 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: #3a3a3a;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+
+    <div class="tips container">
+        {{ if .tv_id }}
+            关联TV：{{ .tv_id }}
+        {{ end}}
+    </div>
+
+    <div class="h60"></div>
+
+    <div class="container">
+        <ul class="video-list">
+            {{ range .data.List }}
+                <li>
+                    <span class="hd">{{ .Resolution }}</span>
+                    <a href="/info/{{ .Id }}">
+                        <img src="{{ .Thumb }}" alt="{{ .Name }}">
+                    </a>
+                    <p>{{ .Name }}</p>
+                </li>
+            {{ end }}
+        </ul>
+    </div>
+
+    </body>
+    </html>
+{{ end }}
