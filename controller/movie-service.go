@@ -8,6 +8,7 @@ import (
 	"github.com/lixiang4u/ShotTv-api/model"
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -150,6 +151,7 @@ func movieInfoById(id string) model.MovieInfo {
 
 func movieVideoById(id string) model.Video {
 	var video = model.Video{}
+	var err error
 
 	c := colly.NewCollector()
 
@@ -167,11 +169,14 @@ func movieVideoById(id string) model.Video {
 			}
 		}
 		if findLine != "" {
-			video, _ = parseVideo(id, findLine)
+			video, err = parseVideo(id, findLine)
+			if err != nil {
+				fmt.Println("[parse.error]", err)
+			}
 		}
 	})
 
-	err := c.Visit(fmt.Sprintf("https://www.czspp.com/v_play/%s.html", id))
+	err = c.Visit(fmt.Sprintf("https://www.czspp.com/v_play/%s.html", id))
 	if err != nil {
 		fmt.Println("[ERR]", err.Error())
 	}
@@ -219,12 +224,12 @@ func parseVideo(id, js string) (model.Video, error) {
 	if err != nil {
 		return video, errors.New("解密失败")
 	}
-	tmpList = strings.Split(string(bs), ";")
+	tmpList = strings.Split(string(bs), "window")
 	if len(tmpList) < 1 {
 		return video, errors.New("解密数据错误")
 	}
 
-	regex := regexp.MustCompile(`{url: "(\S+)",type:"(\S+)",pic:'(\S+)'}`)
+	regex := regexp.MustCompile(`{url: "(\S+)",type:"(\S+)",([\S\s]*)pic:'(\S+)'}`)
 	matchList := regex.FindStringSubmatch(tmpList[0])
 
 	if len(matchList) < 1 {
@@ -236,12 +241,13 @@ func parseVideo(id, js string) (model.Video, error) {
 	for index, m := range matchList {
 		switch index {
 		case 1:
+			video.Source = m
 			video.Url = m
 			break
 		case 2:
 			video.Type = m
 			break
-		case 3:
+		case 4:
 			video.Thumb = m
 			break
 		default:
@@ -249,8 +255,39 @@ func parseVideo(id, js string) (model.Video, error) {
 		}
 	}
 
-	bs, _ = json.Marshal(video)
+	bs, _ = json.MarshalIndent(video, "", "\t")
 	log.Println(fmt.Sprintf("[video] %s", string(bs)))
 
 	return video, nil
+}
+
+func downloadFile(id, url string) error {
+	c := colly.NewCollector()
+
+	hash := util.StringMd5(id)
+	path := fmt.Sprintf("%s/app/video/%s", util.AppPath(), hash[0:2])
+	//file := fmt.Sprintf("%s/%s.m3u8", path, hash)
+	err := util.MkdirAll(path)
+	if err != err {
+		return err
+	}
+
+	c.OnRequest(func(request *colly.Request) {
+		fmt.Println("Visiting", request.URL.String())
+	})
+
+	c.OnResponse(func(response *colly.Response) {
+		// xiewenjian。。。
+		if response.StatusCode == http.StatusOK {
+		} else {
+			log.Println("[request.error]", response.StatusCode)
+		}
+	})
+
+	err = c.Visit(url)
+	if err != nil {
+		fmt.Println("[ERR]", err.Error())
+	}
+
+	return nil
 }
