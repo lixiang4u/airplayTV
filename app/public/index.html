@@ -123,8 +123,12 @@
             document.getElementById('content').innerHTML = '';
         }
 
+        let qrUrl = "https://tv.artools.cc/home?tv_id=" + obj.client_id + "&t=" + obj.timestamp;
+
+        console.log('[qrUrl]', qrUrl);
+
         qrcode = new QRCode("qrcode", {
-            text: "https://tv.artools.cc/home?tv_id=" + obj.client_id + "&t=" + obj.timestamp,
+            text: qrUrl,
             width: 200,
             height: 200,
             colorDark: "#000000",

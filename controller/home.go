@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	go_websocket "github.com/lixiang4u/go-websocket"
+	"log"
 	"net/http"
 	"time"
 )
@@ -53,6 +54,9 @@ func (p HomeController) Play(c *gin.Context) {
 		"timestamp": time.Now().Unix(),
 	}
 	b, _ := json.MarshalIndent(d, "", "	")
+
+	log.Println("[debug]", clientId, string(b))
+
 	go_websocket.WSendMessage(clientId, websocket.TextMessage, b)
 	c.JSON(http.StatusOK, gin.H{})
 }
