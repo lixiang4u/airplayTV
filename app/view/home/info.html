@@ -1,0 +1,119 @@
+{{ define "home/info.html" }}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name=viewport content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Home</title>
+
+        <style type="text/css">
+            body {
+                margin: 0;
+                font-size: 14px;
+                background-color: #f6f6f6;
+            }
+
+            .h60 {
+                width: 100%;
+                height: 60px;
+                clear: both;
+            }
+
+            .container {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 0 20px;
+            }
+
+            .tips {
+                width: 100%;
+                line-height: 42px;
+                border-color: #101010;
+                background-color: #222;
+                color: #9d9d9d;
+                position: fixed;
+                z-index: 99;
+
+            }
+
+            .thumb {
+                width: 80%;
+                margin: 0 auto;
+                display: block;
+            }
+
+            .name {
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            .intro {
+                line-height: 180%;
+            }
+
+            .play-list .item {
+                background-color: #0c81e8;
+                padding: 8px 12px;
+                margin: 7px;
+                display: inline-block;
+                margin-left: 0;
+                border-radius: 5px;
+                color: #c8dde6;
+                text-align: center;
+                font-size: 14px;
+            }
+
+        </style>
+    </head>
+    <body>
+
+    <div class="tips container">
+        {{ if .tv_id }}
+            关联TV：{{ .tv_id }}
+        {{ end}}
+    </div>
+
+    <div class="h60"></div>
+
+    <div class="container">
+        <img class="thumb" src="{{ .data.Thumb }}" alt="{{ .data.Name }}">
+        <p class="name">{{ .data.Name }}</p>
+        <div class="play-list">
+            {{ range .data.Links }}
+                <span class="item" data-id="{{ .Id }}">{{ .Name }}</span>
+            {{ end }}
+        </div>
+        <p class="intro">{{ .data.Intro }}</p>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.play-list .item').on('click', function (element) {
+                if ("{{ .tv_id }}" == "") {
+                    alert('请先扫码关联TV后在播放');
+                    return false;
+                }
+                let id = $(this).attr('data-id');
+                $.ajax({
+                    type: 'post',
+                    url: '/api/play',
+                    data: {
+                        client_id: '{{ .tv_id }}',
+                        id: id
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log(data);
+                    },
+                    error: function (a, b, c) {
+                        console.log(a, b, c);
+                    }
+                });
+            });
+        })
+    </script>
+
+    </body>
+    </html>
+{{ end }}

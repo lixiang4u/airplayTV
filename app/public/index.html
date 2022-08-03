@@ -17,6 +17,13 @@
         .tips {
             position: fixed;
         }
+
+        .qr-info {
+            line-height: 180%;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
     </style>
     <script type="text/javascript">
 
@@ -39,6 +46,7 @@
 
 <div class="tips">
     <div id="qrcode"></div>
+    <div class="qr-info"></div>
     <pre id="content">something here.</pre>
 </div>
 
@@ -47,6 +55,7 @@
     <div id="dplayer"></div>
 </div>
 
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/flv.js/1.6.2/flv.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/hls.js/1.2.0/hls.min.js"></script>
@@ -115,13 +124,15 @@
         }
 
         qrcode = new QRCode("qrcode", {
-            text: JSON.stringify({"client_id": obj.client_id, "timestamp": obj.timestamp}),
+            text: "http://127.0.0.1:8089/home?tv_id=" + obj.client_id + "&t=" + obj.timestamp,
             width: 200,
             height: 200,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
         });
+
+        $('.qr-info').text('TV: ' + obj.client_id);
     }
 
     function play(obj) {

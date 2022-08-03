@@ -135,7 +135,10 @@ func movieInfoById(id string) model.MovieInfo {
 	c.OnHTML(".dyxingq", func(element *colly.HTMLElement) {
 		info.Thumb = element.ChildAttr(".dyimg img", "src")
 		info.Name = element.ChildText(".moviedteail_tt h1")
-		info.Intro = element.ChildText(".yp_context")
+	})
+
+	c.OnHTML(".yp_context", func(element *colly.HTMLElement) {
+		info.Intro = strings.TrimSpace(element.Text)
 	})
 
 	c.OnRequest(func(request *colly.Request) {

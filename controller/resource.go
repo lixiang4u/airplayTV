@@ -63,12 +63,13 @@ func (p ResourceController) Info(ctx *gin.Context) {
 	var id = ctx.Param("id")
 
 	var d = movieInfoById(id)
-	ctx.JSON(http.StatusOK, d)
-	return
 
-	//ctx.HTML(http.StatusOK, "home/home.html", gin.H{
-	//	"data": movieListByTag("zuixindianying", d),
-	//})
+	tvId, _ := ctx.Cookie("tv_id")
+
+	ctx.HTML(http.StatusOK, "home/info.html", gin.H{
+		"data":  d,
+		"tv_id": tvId,
+	})
 }
 
 func (p ResourceController) Video(ctx *gin.Context) {
