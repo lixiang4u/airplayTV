@@ -1,8 +1,10 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func AppPath() string {
@@ -25,4 +27,21 @@ func MkdirAll(path string) error {
 		return nil
 	}
 	return os.MkdirAll(path, os.ModePerm)
+}
+
+// 根据视频id生成视频本地存储地址
+func NewLocalVideoFileName(id, url string) string {
+	hash := StringMd5(id)
+	path := fmt.Sprintf("%s/app/video/%s", AppPath(), hash[0:2])
+	file := fmt.Sprintf("%s/%s", path, hash)
+	if filepath.Ext(url) != "" {
+		file = fmt.Sprintf("%s.%s", file, strings.Trim(filepath.Ext(url), "."))
+	}
+	_ = MkdirAll(path)
+
+	return file
+}
+
+func GetLocalVideoFileUrl(absLocalPath string) string {
+	return strings.TrimPrefix(absLocalPath, fmt.Sprintf("%s/app", AppPath()))
 }

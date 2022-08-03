@@ -9,6 +9,7 @@ import (
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -258,27 +259,33 @@ func parseVideo(id, js string) (model.Video, error) {
 	bs, _ = json.MarshalIndent(video, "", "\t")
 	log.Println(fmt.Sprintf("[video] %s", string(bs)))
 
+	var localFile = util.NewLocalVideoFileName(id, video.Source)
+
+	if !strings.Contains(video.Source, "aliyundrive.asia") {
+		return video, nil
+	}
+
+	err = downloadFile(id, video.Source, localFile)
+	if err != nil {
+		return video, err
+	}
+	video.Url = util.GetLocalVideoFileUrl(localFile)
+
 	return video, nil
 }
 
-func downloadFile(id, url string) error {
+func downloadFile(id, url, local string) (err error) {
 	c := colly.NewCollector()
-
-	hash := util.StringMd5(id)
-	path := fmt.Sprintf("%s/app/video/%s", util.AppPath(), hash[0:2])
-	//file := fmt.Sprintf("%s/%s.m3u8", path, hash)
-	err := util.MkdirAll(path)
-	if err != err {
-		return err
-	}
 
 	c.OnRequest(func(request *colly.Request) {
 		fmt.Println("Visiting", request.URL.String())
 	})
 
 	c.OnResponse(func(response *colly.Response) {
-		// xiewenjian。。。
+		var f *os.File
 		if response.StatusCode == http.StatusOK {
+			f, err = os.OpenFile(local, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
+			_, err = f.Write(response.Body)
 		} else {
 			log.Println("[request.error]", response.StatusCode)
 		}
@@ -289,5 +296,5 @@ func downloadFile(id, url string) error {
 		fmt.Println("[ERR]", err.Error())
 	}
 
-	return nil
+	return err
 }

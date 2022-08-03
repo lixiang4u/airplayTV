@@ -52,6 +52,7 @@ func NewRouter() *gin.Engine {
 	r.Static("/html", "./app/public/")
 	r.Static("/upload", "./app/upload/")
 	r.Static("/static", "./app/static/")
+	r.Static("/video", "./app/video/")
 
 	r.GET("/", new(controller.HomeController).Index)      // 默认首页
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
