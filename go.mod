@@ -3,11 +3,11 @@ module github.com/lixiang4u/ShotTv-api
 go 1.17
 
 require (
+	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gocolly/colly v1.2.0
 	github.com/gohouse/gorose/v2 v2.1.12
-	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/lixiang4u/go-websocket v0.0.0-20210703012044-cbbff2f7473b
 	github.com/spf13/cobra v1.5.0
@@ -21,7 +21,6 @@ require (
 	github.com/antchfx/xmlquery v1.3.12 // indirect
 	github.com/antchfx/xpath v1.2.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/gin-contrib/sessions v0.0.5 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/autotls v0.0.3 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -33,6 +32,7 @@ require (
 	github.com/gohouse/t v0.0.0-20201007094014-630049a6bfe9 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect

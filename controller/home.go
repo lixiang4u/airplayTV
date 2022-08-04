@@ -57,6 +57,9 @@ func (p HomeController) Play(c *gin.Context) {
 
 	log.Println("[debug]", clientId, string(b))
 
-	go_websocket.WSendMessage(clientId, websocket.TextMessage, b)
-	c.JSON(http.StatusOK, gin.H{})
+	if go_websocket.WSendMessage(clientId, websocket.TextMessage, b) == false {
+		c.JSON(http.StatusOK, gin.H{"code": 500, "msg": "发送失败或TV不在线", "data": nil})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
 }
