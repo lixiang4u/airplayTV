@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	go_websocket "github.com/lixiang4u/go-websocket"
@@ -37,7 +38,12 @@ func (p HomeController) BroadcastW(clientId string, ws *websocket.Conn, messageT
 }
 
 func (p HomeController) InfoW(clientId string, ws *websocket.Conn, messageType int, data map[string]interface{}) bool {
-	var d = gin.H{"event": data["event"], "client_id": clientId, "timestamp": time.Now().Unix()}
+	var d = gin.H{
+		"event":     data["event"],
+		"client_id": clientId,
+		"timestamp": time.Now().Unix(),
+		"msg":       fmt.Sprintf("当前客户端ID: %s", clientId),
+	}
 	b, _ := json.MarshalIndent(d, "", "	")
 	_ = ws.WriteMessage(messageType, b)
 	return true

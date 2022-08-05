@@ -184,7 +184,7 @@
 
         function play(obj) {
             console.log('[playing...]', obj);
-            updateMsg("正在播放视频，地址：" + obj.video.url);
+            updateMsg({msg: "正在播放：" + obj.video.url});
             if (obj.video.type == 'auto') {
                 const dp = new DPlayer({
                     container: document.getElementById('dplayer'),
