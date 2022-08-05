@@ -1,4 +1,3 @@
-{{ define "home/index.html" }}
     <!doctype html>
     <html lang="en">
     <head>
@@ -193,7 +192,8 @@
 
         function play(obj) {
             console.log('[playing...]', obj);
-            updateMsg({msg: "正在播放：" + obj.video.url});
+            updateMsg({msg: "正在播放：" + obj.video.name});
+            updateMsg({msg: "地址：" + obj.video.url});
             if (obj.video.type == 'auto') {
                 const dp = new DPlayer({
                     container: document.getElementById('dplayer'),
