@@ -14,8 +14,8 @@ type HomeController struct {
 }
 
 // 演示默认路由
-func (p HomeController) Index(c *gin.Context) {
-	c.String(http.StatusOK, "nothing here!")
+func (p HomeController) Index(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "home/index.html", gin.H{})
 }
 
 func (p HomeController) Hello(c *gin.Context) {
