@@ -184,6 +184,10 @@ func movieVideoById(id string) model.Video {
 		}
 	})
 
+	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
+		video.Name = element.ChildText("h3")
+	})
+
 	err = c.Visit(fmt.Sprintf("https://www.czspp.com/v_play/%s.html", id))
 	if err != nil {
 		log.Println("[ERR]", err.Error())

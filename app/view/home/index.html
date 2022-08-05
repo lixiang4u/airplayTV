@@ -12,11 +12,15 @@
         <link rel="icon" class="js-site-favicon" type="image/svg+xml" href="/favicon.svg">
         <style type="text/css">
 
+            .h20 {
+                width: 100%;
+                height: 20px;
+            }
+
             .box1 {
                 width: 800px;
                 height: 400px;
                 margin: 0 auto;
-                padding-top: 30px;
                 /*border: 1px dashed rgba(195, 195, 195, 0.45);*/
             }
 
@@ -56,6 +60,10 @@
                 text-align: center;
                 color: #626675;
             }
+
+            #dplayer .dplayer-video {
+                max-height: 400px;
+            }
         </style>
         <script type="text/javascript">
 
@@ -75,6 +83,8 @@
     </head>
     <body>
 
+    <div class="h20 clearfix"></div>
+
     <div class="box1">
         <div class="box-qr">
             <div id="qrcode"></div>
@@ -88,7 +98,6 @@
     </div>
     <div class="box2">
         <pre id="content"></pre>
-
     </div>
 
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
