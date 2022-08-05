@@ -1,55 +1,51 @@
 {{ define "home/home.html" }}
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name=viewport content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <title>Home</title>
-        <link rel="icon" class="js-site-favicon" type="image/svg+xml" href="/favicon.svg">
+        <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.css" rel="stylesheet">
 
         <style type="text/css">
-            body {
-                margin: 0;
-                font-size: 14px;
-                background-color: #f6f6f6;
+
+            .navbar-header span {
+                /*width: 100px;*/
+                margin-top: 19px;
+                font-size: 12px;
+                display: inline-block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: whitesmoke;
+                /*line-height: 50px;*/
             }
 
-            .h60 {
+            button[type=submit] {
                 width: 100%;
-                height: 60px;
+            }
+
+            .h20 {
+                width: 100%;
+                height: 20px;
                 clear: both;
             }
 
-            .container {
-                max-width: 1280px;
-                margin: 0 auto;
-                padding: 0 20px;
-            }
-
-            .tips {
+            .h30 {
                 width: 100%;
-                line-height: 42px;
-                border-color: #101010;
-                background-color: #222;
-                color: #9d9d9d;
-                position: fixed;
-                z-index: 99;
-
+                height: 30px;
+                clear: both;
             }
 
-            .video-list {
-                padding: 0;
-                margin: 0;
+            .h40 {
+                width: 100%;
+                height: 40px;
+                clear: both;
             }
 
-            .video-list li {
-                text-align: center;
-                float: left;
-                padding: 8px 12px 8px 12px;
-                list-style-type: none;
-            }
-
-            .video-list li .hd {
+            .video-item .hd {
                 display: block;
                 padding: 4px 5px;
                 color: #fff;
@@ -60,12 +56,12 @@
                 background-color: rgba(255, 92, 138, 0.85);
             }
 
-            .video-list li img {
+            .video-item img {
                 width: 156px;
                 height: 220px;
             }
 
-            .video-list li p {
+            .video-item p {
                 width: 156px;
                 margin: 10px 0 20px 0;
                 overflow: hidden;
@@ -74,33 +70,87 @@
                 color: #3a3a3a;
                 text-align: left;
             }
+
         </style>
     </head>
     <body>
 
-    <div class="tips container">
-        {{ if .tv_id }}
-            关联TV：{{ .tv_id }}
-        {{ else }}
-            请先扫码关联TV
-        {{ end}}
+    <div class="navbar navbar-inverse">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand hidden-sm" href="/">ShotTV</a>
+                {{ if .tv_id }}
+                    <span>ID: {{ .tv_id }}</span>
+                {{ else }}
+                    <span>请先扫码关联TV</span>
+                {{ end}}
+            </div>
+        </div>
     </div>
-
-    <div class="h60"></div>
 
     <div class="container">
-        <ul class="video-list">
-            {{ range .data.List }}
-                <li>
-                    <span class="hd">{{ .Resolution }}</span>
-                    <a href="/info/{{ .Id }}">
-                        <img src="{{ .Thumb }}" alt="{{ .Name }}">
-                    </a>
-                    <p>{{ .Name }}</p>
-                </li>
-            {{ end }}
+        <form class="form-inline" action="#" method="get">
+            <input type="hidden" name="p" value="{{ .pageCurrent }}">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-8 col-xs-8">
+                        <label for="search" class="sr-only">search</label>
+                        <input type="text" class="form-control" id="search" name="q" placeholder="search"
+                               value="{{ .search }}">
+                    </div>
+                    <div class="col-sm-4 col-xs-4">
+                        <button type="submit" class="btn btn-primary">搜索</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="h20"></div>
+
+    <div class="container">
+        <div class="container">
+            <div class="row">
+                {{ range $idx, $item:= .data.List }}
+                    <div class="col-sm-6 col-xs-6 col-md-3 video-item">
+                        <span class="hd">1080P</span>
+                        <a href="/info/{{ .Id }}">
+                            <img src="{{ .Thumb }}" alt="{{ .Name }}">
+                        </a>
+                        <p>{{ .Name }}</p>
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <ul class="pagination" style="margin: 0 auto; display: block;width: fit-content;">
+            <li>
+                <a href="?p={{ .pagePrev }}&q={{ .search }}" aria-label="向前"><span aria-hidden="true">« 上一页</span></a>
+            </li>
+            <li>
+                <a href="?p={{ .pageNext }}&q={{ .search }}" aria-label="向后"><span aria-hidden="true">下一页 »</span></a>
+            </li>
         </ul>
     </div>
+
+    <div class="h40"></div>
+
+    <!--
+    <div style="width: 100%;height: 800px;"></div>
+    -->
+
+
+    <!--
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-8 col-xs-8">俄德法</div>
+            <div class="col-sm-4 col-xs-4">v从v</div>
+        </div>
+    </div>
+    -->
+
 
     </body>
     </html>

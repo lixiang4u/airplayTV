@@ -2,8 +2,10 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/lixiang4u/ShotTv-api/model"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -79,4 +81,46 @@ func (p ResourceController) Video(ctx *gin.Context) {
 	var d = movieVideoById(id)
 	ctx.JSON(http.StatusOK, d)
 	return
+}
+
+// 扫码后的页面
+func (p ResourceController) Home2(ctx *gin.Context) {
+	var page = ctx.Query("p")
+	var search = ctx.Query("q")
+	var tvId = ctx.Query("tv_id")
+
+	if len(tvId) > 8 {
+		ctx.SetCookie("tv_id", tvId, 0, "", "", false, false)
+		ctx.Redirect(302, ctx.FullPath()) //HTTP重定向:301(永久)与302(临时)
+	}
+	tvId, _ = ctx.Cookie("tv_id")
+
+	var data model.Pager
+	if strings.TrimSpace(search) == "" {
+		data = movieListByTag("zuixindianying", page)
+	} else {
+		data = movieListBySearch(search, page)
+	}
+
+	var pageCurrent = 1
+	var pagePrev = 1
+	var pageNext = 1
+	pageCurrent, _ = strconv.Atoi(page)
+	if pageCurrent <= 1 {
+		pagePrev = 1
+		pageCurrent = 1
+		pageNext = 2
+	} else {
+		pageNext = pageCurrent + 1
+	}
+
+	ctx.HTML(http.StatusOK, "home/home.html", gin.H{
+		"data":        data,
+		"tv_id":       tvId,
+		"page":        page,
+		"pagePrev":    pagePrev,
+		"pageCurrent": pageCurrent,
+		"pageNext":    pageNext,
+		"search":      search,
+	})
 }

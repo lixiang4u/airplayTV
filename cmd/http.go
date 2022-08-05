@@ -69,7 +69,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/info/:id", new(controller.ResourceController).Info)
 	r.GET("/api/video/:id", new(controller.ResourceController).Video)
 
-	r.GET("/home", new(controller.ResourceController).Home)
+	r.GET("/home", new(controller.ResourceController).Home2)
 	r.GET("/info/:id", new(controller.ResourceController).Info)
 
 	r.GET("/ws", func(context *gin.Context) {
