@@ -69,3 +69,13 @@ func (p HomeController) Play(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
 }
+
+func (p HomeController) VideoPlayInfo(c *gin.Context) {
+	var id = c.PostForm("id")
+	var d = gin.H{
+		"event":     "play",
+		"video":     movieVideoById(id),
+		"timestamp": time.Now().Unix(),
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": d})
+}

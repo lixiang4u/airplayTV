@@ -33,7 +33,7 @@
             }
 
             .video-info .thumb {
-                width: 80%;
+                width: 90%;
                 margin: 0 auto;
                 display: block;
             }
@@ -64,6 +64,12 @@
                 font-size: 14px;
             }
 
+            .video-info .tips {
+                color: red;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
         </style>
     </head>
     <body>
@@ -82,9 +88,13 @@
     </div>
 
     <div class="container video-info">
-        <img class="thumb" src="{{ .data.Thumb }}" alt="{{ .data.Name }}">
+        <div class="container">
+            <img class="thumb" src="{{ .data.Thumb }}" alt="{{ .data.Name }}">
+            <div id="dplayer" hidden="hidden"></div>
+        </div>
         <div class="container">
             <p class="name">{{ .data.Name }}</p>
+            <p class="tips">如关联了设备，则投射到设备，否则直接播放</p>
             <div class="play-list">
                 {{ range .data.Links }}
                     <span class="item" data-id="{{ .Id }}">{{ .Name }}</span>
@@ -97,14 +107,77 @@
     <div class="h20"></div>
 
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/hls.js/1.2.0/hls.min.js"></script>
+    <!--<script src="https://cdn.bootcdn.net/ajax/libs/dashjs/4.4.1/dash.all.min.js"></script>-->
+    <!--<script src="https://cdn.bootcdn.net/ajax/libs/webtorrent/1.8.26/webtorrent.min.js"></script>-->
+    <script src="https://cdn.bootcdn.net/ajax/libs/dplayer/1.26.0/DPlayer.min.js"></script>
+
     <script type="text/javascript">
         $(function () {
+
+            function play(obj) {
+                console.log('[playing...]', obj);
+                if (obj.video.type == 'auto') {
+                    const dp = new DPlayer({
+                        container: document.getElementById('dplayer'),
+                        autoplay: true,
+                        theme: "#00b2c2",
+                        video: {
+                            url: obj.video.url,
+                            type: "auto"
+                        },
+                    });
+                } else {
+                    const dp = new DPlayer({
+                        container: document.getElementById('dplayer'),
+                        video: {
+                            url: obj.video.url,
+                            autoplay: true,
+                            // url:'https://hll.aliyundrive.asia/vtt/movie1/m/03/神偷奶爸3.m3u8',
+                            type: 'customHls',
+                            customType: {
+                                customHls: function (video, player) {
+                                    const hls = new Hls();
+                                    hls.loadSource(video.src);
+                                    hls.attachMedia(video);
+                                },
+                            },
+
+                        }
+                    });
+                }
+            }
+
+
             $('.play-list .item').on('click', function (element) {
+                let id = $(this).attr('data-id');
+
+                // 本地播放
                 if ("{{ .tv_id }}" == "") {
-                    alert('请先扫码关联TV后在播放');
+                    $.ajax({
+                        type: 'post',
+                        url: '/api/play/info',
+                        data: {
+                            id: id
+                        },
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log(data);
+
+                            $('.video-info .thumb').hide();
+                            $('#dplayer').show();
+
+                            play(data.data)
+                        }, error: function (a, b, c) {
+                            console.log(a, b, c);
+                            alert('服务器错误，请稍后');
+
+                        }
+                    });
                     return false;
                 }
-                let id = $(this).attr('data-id');
+
+                // 　投屏播放｜远程播放
                 $.ajax({
                     type: 'post',
                     url: '/api/play',

@@ -63,6 +63,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/", new(controller.HomeController).Index)      // 默认首页
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
 	r.POST("/api/play", new(controller.HomeController).Play)
+	r.POST("/api/play/info", new(controller.HomeController).VideoPlayInfo)
 	r.GET("/api/search", new(controller.ResourceController).Search)
 	r.GET("/api/tag", new(controller.ResourceController).ListByTag)
 	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
