@@ -1,58 +1,58 @@
 {{ define "home/info.html" }}
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name=viewport content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <title>Home</title>
-        <link rel="icon" class="js-site-favicon" type="image/svg+xml" href="/favicon.svg">
+        <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.css" rel="stylesheet">
 
         <style type="text/css">
             body {
-                margin: 0;
-                font-size: 14px;
-                background-color: #f6f6f6;
+                background-color: rgb(223, 239, 221);
             }
 
-            .h60 {
+            .navbar-header span {
+                /*width: 100px;*/
+                margin-top: 19px;
+                font-size: 12px;
+                display: inline-block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                color: whitesmoke;
+                /*line-height: 50px;*/
+            }
+
+            .h20 {
                 width: 100%;
-                height: 60px;
+                height: 20px;
                 clear: both;
             }
 
-            .container {
-                max-width: 1280px;
-                margin: 0 auto;
-                padding: 0 20px;
-            }
-
-            .tips {
-                width: 100%;
-                line-height: 42px;
-                border-color: #101010;
-                background-color: #222;
-                color: #9d9d9d;
-                position: fixed;
-                z-index: 99;
-
-            }
-
-            .thumb {
+            .video-info .thumb {
                 width: 80%;
                 margin: 0 auto;
                 display: block;
             }
 
-            .name {
+            .video-info .name {
                 font-size: 18px;
                 font-weight: bold;
+                margin-top: 18px;
             }
 
-            .intro {
+            .video-info .intro {
                 line-height: 180%;
             }
 
-            .play-list .item {
+            .video-info .play-list {
+                margin: 5px 0 5px 0;
+            }
+
+            .video-info .play-list .item {
                 background-color: #0c81e8;
                 padding: 8px 12px;
                 margin: 7px;
@@ -68,26 +68,33 @@
     </head>
     <body>
 
-    <div class="tips container">
-        {{ if .tv_id }}
-            关联TV：{{ .tv_id }}
-        {{ else }}
-            请先扫码关联TV
-        {{ end}}
-    </div>
-
-    <div class="h60"></div>
-
-    <div class="container">
-        <img class="thumb" src="{{ .data.Thumb }}" alt="{{ .data.Name }}">
-        <p class="name">{{ .data.Name }}</p>
-        <div class="play-list">
-            {{ range .data.Links }}
-                <span class="item" data-id="{{ .Id }}">{{ .Name }}</span>
-            {{ end }}
+    <div class="navbar navbar-inverse">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand hidden-sm" href="/">ShotTV</a>
+                {{ if .tv_id }}
+                    <span>ID: {{ .tv_id }}</span>
+                {{ else }}
+                    <span>请先扫码关联TV</span>
+                {{ end}}
+            </div>
         </div>
-        <p class="intro">{{ .data.Intro }}</p>
     </div>
+
+    <div class="container video-info">
+        <img class="thumb" src="{{ .data.Thumb }}" alt="{{ .data.Name }}">
+        <div class="container">
+            <p class="name">{{ .data.Name }}</p>
+            <div class="play-list">
+                {{ range .data.Links }}
+                    <span class="item" data-id="{{ .Id }}">{{ .Name }}</span>
+                {{ end }}
+            </div>
+            <p class="intro"><b>介绍：</b>{{ .data.Intro }}</p>
+        </div>
+    </div>
+
+    <div class="h20"></div>
 
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script type="text/javascript">
