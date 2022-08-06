@@ -30,6 +30,10 @@
                 /*line-height: 50px;*/
             }
 
+            .navbar-header span a {
+                color: lemonchiffon;
+            }
+
             button[type=submit] {
                 width: 100%;
             }
@@ -96,7 +100,11 @@
             <div class="navbar-header">
                 <a class="navbar-brand hidden-sm" href="/">ShotTV</a>
                 {{ if .tv_id }}
-                    <span>ID: {{ .tv_id }}</span>
+                    <span>
+                        ID: {{ .tv_id }}
+                        &nbsp;
+                        [<a class="unbind" href="?unbind=1">解绑</a>]
+                    </span>
                 {{ else }}
                     <span>请先扫码关联TV</span>
                 {{ end}}

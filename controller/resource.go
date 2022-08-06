@@ -64,6 +64,12 @@ func (p ResourceController) Home(ctx *gin.Context) {
 
 func (p ResourceController) Info(ctx *gin.Context) {
 	var id = ctx.Param("id")
+	var unbind = ctx.Query("unbind")
+
+	if unbind == "1" {
+		ctx.SetCookie("tv_id", "", 0, "", "", false, false)
+		ctx.Redirect(302, ctx.FullPath()) //HTTP重定向:301(永久)与302(临时)
+	}
 
 	var d = movieInfoById(id)
 
@@ -88,7 +94,12 @@ func (p ResourceController) Home2(ctx *gin.Context) {
 	var page = ctx.Query("p")
 	var search = ctx.Query("q")
 	var tvId = ctx.Query("tv_id")
+	var unbind = ctx.Query("unbind")
 
+	if unbind == "1" {
+		ctx.SetCookie("tv_id", "", 0, "", "", false, false)
+		ctx.Redirect(302, ctx.FullPath()) //HTTP重定向:301(永久)与302(临时)
+	}
 	if len(tvId) > 8 {
 		ctx.SetCookie("tv_id", tvId, 0, "", "", false, false)
 		ctx.Redirect(302, ctx.FullPath()) //HTTP重定向:301(永久)与302(临时)
