@@ -17,14 +17,16 @@ type HomeController struct {
 
 // 演示默认路由
 func (p HomeController) Index(ctx *gin.Context) {
-	var isTesla = false
+
+	// 默认读取UA，进入tesla全屏页面，如果进去则带参数from=tesla
 	if strings.Contains(ctx.GetHeader("USER-AGENT"), "Tesla") {
-		isTesla = true
+		// 如果是tesla访问，
+		//则先跳转到/fullscreen，
+		//在通过/fullscreen跳转到/tesla/index
+		ctx.Redirect(302, "/tesla/fullscreen")
 	}
 
-	ctx.HTML(http.StatusOK, "home/index.html", gin.H{
-		"is_tesla": isTesla,
-	})
+	ctx.HTML(http.StatusOK, "home/index.html", gin.H{})
 }
 
 func (p HomeController) Hello(c *gin.Context) {

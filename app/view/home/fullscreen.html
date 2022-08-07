@@ -15,7 +15,7 @@
             }
 
             .container {
-                padding-top: 150px;
+                padding-top: 200px;
                 text-align: center;
             }
 
@@ -25,14 +25,21 @@
                 /*padding: 20px 0 20px 20px;*/
                 border-radius: 4px;
                 margin: 0 auto;
+                cursor: pointer;
             }
 
             .go svg {
                 margin-top: -8px;
             }
 
+            .intro {
+                color: #aaa8a8;
+                line-height: 180%;
+            }
+
             .tips {
                 margin-top: 30px;
+                margin-bottom: 20px;
                 color: red;
             }
 
@@ -50,13 +57,19 @@
             </svg>
             TΞSLA网页全屏
         </h1>
-        <p class="tips">跳转后点击【确认前往爆米花】进入全屏</p>
+        <p class="tips">跳转后点击【<b>确认前往爆米花</b>】进入全屏</p>
+        <p class="intro">
+            原理：通过内置腾讯视频中链接<a href="https://v.qq.com/search_redirect.html?url=">跳转</a>至爆米花
+            <br/>
+            再通过爆米花<a href="https://www.baomihua.com/go.aspx?url=">跳转</a>到目标地址。最终实现多级重定向。
+        </p>
     </div>
 
     <!-- 参考 https://s3xy.top ，同知乎xbing所述 -->
+
     <script>
         function go() {
-            window.document.location.href = "https://v.qq.com/search_redirect.html?url=https://www.baomihua.com/go.aspx?url=https://tv.artools.cc?baomihua.com=" + new Date().getTime()
+            window.document.location.href = "https://v.qq.com/search_redirect.html?url=https://www.baomihua.com/go.aspx?url=https://tv.artools.cc/tesla/index?baomihua.com=" + new Date().getTime()
         }
     </script>
 
