@@ -34,7 +34,7 @@
 
             .box2 {
                 margin: 0 auto;
-                padding: 10px 0 10px 0;
+                display: none;
             }
 
             .box2 pre {
@@ -46,7 +46,7 @@
                 width: 200px;
                 height: 200px;
                 margin: 0 auto;
-                padding-top: 70px;
+                padding-top: 120px;
                 padding-bottom: 20px;
             }
 
@@ -90,19 +90,20 @@
     <div class="h20 clearfix"></div>
 
     <div class="box1">
+        <div>
+            <div id="dplayer"></div>
+        </div>
+        <div class="box2">
+            <pre id="content"></pre>
+        </div>
         <div class="box-qr">
             <div id="qrcode"></div>
             <div class="qr-info2">投射(请扫码)&nbsp;|&nbsp;<a href="/home">直接播放</a></div>
             <div class="qr-info"></div>
         </div>
+    </div>
 
-        <div>
-            <div id="dplayer"></div>
-        </div>
-    </div>
-    <div class="box2">
-        <pre id="content"></pre>
-    </div>
+    <div class="h20"></div>
 
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -226,7 +227,8 @@
                     }
                 });
             }
-            $('.box-qr').hide();
+            $('.box2').show();
+            $('#qrcode').css('padding-top', 0);
         }
 
         function initWSAddr() {
