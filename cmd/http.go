@@ -72,6 +72,7 @@ func NewRouter() *gin.Engine {
 
 	r.GET("/home", new(controller.ResourceController).Home2)
 	r.GET("/info/:id", new(controller.ResourceController).Info)
+	r.GET("/fullscreen", new(controller.HomeController).FullScreen)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)

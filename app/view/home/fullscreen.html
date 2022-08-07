@@ -1,0 +1,65 @@
+{{ define "home/fullscreen.html" }}
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>TΞSLA跳转全屏</title>
+        <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.css" rel="stylesheet">
+
+        <style type="text/css">
+            body {
+                background-color: rgb(223, 239, 221);
+            }
+
+            .container {
+                padding-top: 150px;
+                text-align: center;
+            }
+
+            .go {
+                width: 340px;
+                line-height: 80px;
+                /*padding: 20px 0 20px 20px;*/
+                border-radius: 4px;
+                margin: 0 auto;
+            }
+
+            .go svg {
+                margin-top: -8px;
+            }
+
+            .tips {
+                margin-top: 30px;
+                color: red;
+            }
+
+        </style>
+    </head>
+    <body>
+
+
+    <div class="container">
+        <h1 class="go btn-primary" onclick="go()">
+            <svg class="icon" style="width: 1em;height: 1em;vertical-align: middle;fill: currentColor;overflow: hidden;"
+                 viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="12446">
+                <path d="M638.976 433.152L563.2 779.264c-3.072 14.336-12.288 26.624-25.6 33.792-7.168 4.096-15.36 6.144-24.576 6.144-5.12 0-9.216-1.024-14.336-2.048-13.312-4.096-23.552-12.288-30.72-24.576l-43.008-77.824c0-1.024-1.024-2.048-2.048-2.048-3.072-3.072-6.144-3.072-7.168-3.072-2.048 0-5.12 0-7.168 3.072l-72.704 72.704c-9.216 9.216-22.528 15.36-35.84 15.36s-26.624-5.12-35.84-15.36L225.28 746.496c-9.216-9.216-15.36-22.528-15.36-35.84s5.12-26.624 15.36-35.84l72.704-72.704 2.048-2.048c2.048-3.072 1.024-6.144 1.024-8.192s-2.048-4.096-5.12-6.144L218.112 542.72c-13.312-7.168-22.528-19.456-25.6-33.792-6.144-27.648 11.264-55.296 38.912-60.416l345.088-74.752c7.168-2.048 14.336-2.048 21.504 0 28.672 5.12 46.08 31.744 40.96 59.392zM530.432 297.984c4.096 6.144 10.24 9.216 17.408 9.216 4.096 0 7.168-1.024 11.264-3.072 9.216-6.144 12.288-18.432 6.144-28.672l-49.152-77.824c-6.144-9.216-18.432-12.288-28.672-6.144-9.216 6.144-12.288 18.432-6.144 28.672l49.152 77.824z m235.52-64.512c-8.192-7.168-21.504-6.144-28.672 2.048l-59.392 70.656c-7.168 8.192-6.144 21.504 2.048 28.672 4.096 3.072 8.192 5.12 13.312 5.12 6.144 0 11.264-2.048 15.36-7.168l59.392-70.656c8.192-8.192 7.168-21.504-2.048-28.672z m74.752 243.712l-84.992-34.816c-10.24-4.096-22.528 1.024-26.624 11.264s1.024 22.528 11.264 26.624l84.992 34.816c2.048 1.024 5.12 1.024 7.168 1.024 8.192 0 15.36-5.12 19.456-13.312 4.096-9.216-1.024-20.48-11.264-25.6z"
+                      p-id="12447"></path>
+            </svg>
+            TΞSLA网页全屏
+        </h1>
+        <p class="tips">跳转后点击【确认前往爆米花】进入全屏</p>
+    </div>
+
+    <!-- 参考 https://s3xy.top ，同知乎xbing所述 -->
+    <script>
+        function go() {
+            window.document.location.href = "https://v.qq.com/search_redirect.html?url=https://www.baomihua.com/go.aspx?url=https://tv.artools.cc/?from=fullscreen&baomihua.com=" + new Date().getTime()
+        }
+    </script>
+
+    </body>
+    </html>
+{{ end }}

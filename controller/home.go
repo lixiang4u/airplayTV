@@ -8,6 +8,7 @@ import (
 	go_websocket "github.com/lixiang4u/go-websocket"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -16,7 +17,14 @@ type HomeController struct {
 
 // 演示默认路由
 func (p HomeController) Index(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "home/index.html", gin.H{})
+	var isTesla = false
+	if strings.Contains(ctx.GetHeader("USER-AGENT"), "Tesla") {
+		isTesla = true
+	}
+
+	ctx.HTML(http.StatusOK, "home/index.html", gin.H{
+		"is_tesla": isTesla,
+	})
 }
 
 func (p HomeController) Hello(c *gin.Context) {
@@ -78,4 +86,8 @@ func (p HomeController) VideoPlayInfo(c *gin.Context) {
 		"timestamp": time.Now().Unix(),
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": d})
+}
+
+func (p HomeController) FullScreen(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "home/fullscreen.html", gin.H{})
 }

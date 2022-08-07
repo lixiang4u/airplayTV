@@ -54,6 +54,7 @@
                 border-radius: 4px;
             }
 
+            .box1 .fullscreen,
             .box1 .qr-info,
             .box1 .qr-info2 {
                 line-height: 200%;
@@ -62,6 +63,7 @@
                 color: #626675;
             }
 
+            .box1 .fullscreen a,
             .box1 .qr-info2 a {
                 color: #337ab7;
             }
@@ -90,7 +92,10 @@
     <div class="box1">
         <div class="box-qr">
             <div id="qrcode"></div>
-            <div class="qr-info2">投射请扫码&nbsp;|&nbsp;<a href="/home">直接播放</a></div>
+            {{ if .is_tesla }}
+                <div class="fullscreen"><a href="/fullscreen">TΞSLA 全屏模式</a></div>
+            {{ end }}
+            <div class="qr-info2">投射(请扫码)&nbsp;|&nbsp;<a href="/home">直接播放</a></div>
             <div class="qr-info"></div>
         </div>
 
