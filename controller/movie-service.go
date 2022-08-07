@@ -126,7 +126,7 @@ func movieInfoById(id string) model.MovieInfo {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {
 			info.Links = append(info.Links, model.Link{
 				Id:   handleUrlToId2(element.Attr("href")),
-				Name: element.Text,
+				Name: strings.ReplaceAll(element.Text, "厂长", ""),
 				Url:  element.Attr("href"),
 			})
 		})
