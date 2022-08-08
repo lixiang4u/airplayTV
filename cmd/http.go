@@ -73,7 +73,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/home", new(controller.ResourceController).Home2)
 	r.GET("/info/:id", new(controller.ResourceController).Info)
 
-	r.GET("/tesla/index", new(controller.HomeController).Index)
+	r.GET("/tesla/index", new(controller.HomeController).TeslaIndex)
 	r.GET("/tesla/fullscreen", new(controller.HomeController).FullScreen)
 
 	r.GET("/ws", func(context *gin.Context) {

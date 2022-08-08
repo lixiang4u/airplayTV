@@ -28,6 +28,9 @@ func (p HomeController) Index(ctx *gin.Context) {
 
 	ctx.HTML(http.StatusOK, "home/index.html", gin.H{})
 }
+func (p HomeController) TeslaIndex(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "home/index.html", gin.H{})
+}
 
 func (p HomeController) Hello(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"/path": "/hello", "time": time.Now().String()})
