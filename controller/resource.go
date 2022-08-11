@@ -81,7 +81,15 @@ func (p ResourceController) Info(ctx *gin.Context) {
 	})
 }
 
-func (p ResourceController) Video(ctx *gin.Context) {
+func (p ResourceController) VideoDetail(ctx *gin.Context) {
+	var id = ctx.Param("id")
+
+	var d = movieInfoById(id)
+
+	ctx.JSON(http.StatusOK, d)
+}
+
+func (p ResourceController) VideoSource(ctx *gin.Context) {
 	var id = ctx.Param("id")
 
 	var d = movieVideoById(id)

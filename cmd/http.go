@@ -64,11 +64,19 @@ func NewRouter() *gin.Engine {
 	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
 	r.POST("/api/play", new(controller.HomeController).Play)
 	r.POST("/api/play/info", new(controller.HomeController).VideoPlayInfo)
+
 	r.GET("/api/search", new(controller.ResourceController).Search)
 	r.GET("/api/tag", new(controller.ResourceController).ListByTag)
 	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
 	r.GET("/api/info/:id", new(controller.ResourceController).Info)
-	r.GET("/api/video/:id", new(controller.ResourceController).Video)
+	r.GET("/api/video/:id", new(controller.ResourceController).VideoSource)
+
+	// 统一api
+	r.GET("/api/video/search", new(controller.ResourceController).Search)
+	r.GET("/api/video/tag", new(controller.ResourceController).ListByTag)
+	r.GET("/api/video/tag/:tagName", new(controller.ResourceController).ListByTag)
+	r.GET("/api/video/detail/:id", new(controller.ResourceController).VideoDetail) // 视频详细信息
+	r.GET("/api/video/source/:id", new(controller.ResourceController).VideoSource) // 视频播放信息
 
 	r.GET("/home", new(controller.ResourceController).Home2)
 	r.GET("/info/:id", new(controller.ResourceController).Info)
