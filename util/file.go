@@ -32,7 +32,7 @@ func MkdirAll(path string) error {
 // 根据视频id生成视频本地存储地址
 func NewLocalVideoFileName(id, url string) string {
 	hash := StringMd5(id)
-	path := fmt.Sprintf("%s/app/video/%s", AppPath(), hash[0:2])
+	path := fmt.Sprintf("%s/app/m3u8/%s", AppPath(), hash[0:2])
 	file := fmt.Sprintf("%s/%s", path, hash)
 	if filepath.Ext(url) != "" {
 		file = fmt.Sprintf("%s.%s", file, strings.Trim(filepath.Ext(url), "."))
