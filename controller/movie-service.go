@@ -269,7 +269,14 @@ func parseVideo(id, js string) (model.Video, error) {
 
 	var localFile = util.NewLocalVideoFileName(id, video.Source)
 
-	if !strings.Contains(video.Source, "aliyundrive.asia") {
+	var needDownloadFile1 = strings.Contains(video.Source, "aliyundrive.asia")
+	var needDownloadFile2 = strings.Contains(video.Source, "api.czspp.com") && strings.HasSuffix(video.Source, ".m3u8")
+
+	log.Println("[video.Source]", video.Source)
+	log.Println("[needDownloadFile1]", needDownloadFile1)
+	log.Println("[needDownloadFile2]", needDownloadFile2)
+
+	if !needDownloadFile1 && !needDownloadFile2 {
 		return video, nil
 	}
 
