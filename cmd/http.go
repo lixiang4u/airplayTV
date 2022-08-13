@@ -77,12 +77,15 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/video/tag/:tagName", new(controller.ResourceController).ListByTag)
 	r.GET("/api/video/detail/:id", new(controller.ResourceController).VideoDetail) // 视频详细信息
 	r.GET("/api/video/source/:id", new(controller.ResourceController).VideoSource) // 视频播放信息
-
-	r.GET("/home", new(controller.ResourceController).Home2)
-	r.GET("/info/:id", new(controller.ResourceController).Info)
+	r.GET("/api/ws", func(context *gin.Context) {
+		ws.Run(context.Writer, context.Request, nil)
+	})
 
 	r.GET("/tesla/index", new(controller.HomeController).TeslaIndex)
 	r.GET("/tesla/fullscreen", new(controller.HomeController).FullScreen)
+
+	r.GET("/home", new(controller.ResourceController).Home2)
+	r.GET("/info/:id", new(controller.ResourceController).Info)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
