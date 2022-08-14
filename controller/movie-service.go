@@ -19,7 +19,7 @@ func movieListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
 
 	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
@@ -68,7 +68,7 @@ func movieListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
 
 	c.OnHTML(".mi_cont .mi_ne_kd ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
@@ -120,7 +120,7 @@ func movieListByTag(tagName, page string) model.Pager {
 func movieInfoById(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	c := colly.NewCollector()
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
 
 	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {

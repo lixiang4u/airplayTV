@@ -45,3 +45,7 @@ func NewLocalVideoFileName(id, url string) string {
 func GetLocalVideoFileUrl(absLocalPath string) string {
 	return strings.TrimPrefix(absLocalPath, fmt.Sprintf("%s/app", AppPath()))
 }
+
+func GetCollyCacheDir() string {
+	return fmt.Sprintf("%s/app/cache/colly", AppPath())
+}
