@@ -161,7 +161,7 @@ func handleNNPageNumber(page string) int {
 }
 
 // 根据视频id获取播放列表
-func GetVideoPlayLinks(id string) (urls []string, err error) {
+func GetNNVideoPlayLinks(id string) (urls []string, err error) {
 	var res []interface{}
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -194,4 +194,47 @@ func GetVideoPlayLinks(id string) (urls []string, err error) {
 	}
 
 	return
+}
+
+func wrapLinks(urls []string) []model.Link {
+	var links []model.Link
+	for idx, u := range urls {
+		links = append(links, model.Link{
+			Id:   u,
+			Name: fmt.Sprintf("资源%d", idx+1),
+			Url:  u,
+		})
+	}
+	return links
+}
+
+// 根据id获取视频播放列表信息
+func GetNNVideoInfo(id string) model.MovieInfo {
+	var info = model.MovieInfo{}
+
+	info.Id = id
+
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+
+	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
+		info.Thumb = element.ChildAttr(".thumb", "src")
+		info.Name = element.ChildText(".product-title")
+		info.Intro = element.ChildText(".product-excerpt span")
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	err := c.Visit(fmt.Sprintf(nnPlayUrl, id))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+	urls, err := GetNNVideoPlayLinks(id)
+
+	if err == nil {
+		info.Links = wrapLinks(urls)
+	}
+
+	return info
 }
