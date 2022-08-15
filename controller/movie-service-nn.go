@@ -159,3 +159,39 @@ func handleNNPageNumber(page string) int {
 	}
 	return n - 1
 }
+
+// 根据视频id获取播放列表
+func GetVideoPlayLinks(id string) (urls []string, err error) {
+	var res []interface{}
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	err = chromedp.Run(
+		ctx,
+		chromedp.Navigate(fmt.Sprintf(nnPlayUrl, id)),
+		chromedp.Evaluate(`urls;`, &res),
+	)
+	if err != nil && !strings.Contains(err.Error(), "net::ERR_ABORTED") {
+		// Note: Ignoring the net::ERR_ABORTED page error is essential here
+		// since downloads will cause this error to be emitted, although the
+		// download will still succeed.
+		//log.Fatal(err)
+		return
+	}
+	if res == nil {
+		return
+	}
+
+	for _, tmpList := range res {
+		for _, url := range tmpList.([]interface{}) {
+			urls = append(urls, url.(string))
+		}
+	}
+
+	return
+}
