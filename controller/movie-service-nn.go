@@ -5,16 +5,21 @@ import (
 	"fmt"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/gocolly/colly"
+	"github.com/lixiang4u/ShotTv-api/model"
+	"github.com/lixiang4u/ShotTv-api/util"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	nnM3u8Url = "https://www.nunuyy2.org/url.php"
-	nnPlayUrl = "https://www.nunuyy2.org/dianying/%s.html" //https://www.nunuyy2.org/dianying/101451.html
+	nnM3u8Url   = "https://www.nunuyy2.org/url.php"
+	nnPlayUrl   = "https://www.nunuyy2.org/dianying/%s.html" //https://www.nunuyy2.org/dianying/101451.html
+	nnSearchUrl = "https://www.nunuyy2.org/so/%s-%s-%d-.html"
 )
 
 // 使用chromedp直接请求页面关联的播放数据m3u8
@@ -78,4 +83,79 @@ func handleNNVideoUrl(requestUrl, postData string, videoUrl *string) error {
 	}
 	*videoUrl = m3u8Url
 	return nil
+}
+
+func GetNNSearchList(search, page string) model.Pager {
+	var pager = model.Pager{}
+	pager.Limit = 24 // 每页24条
+
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+
+	c.OnHTML(".lists-content li", func(element *colly.HTMLElement) {
+		name := element.ChildText("h2 a")
+		url := element.ChildAttr("a.thumbnail", "href")
+		thumb := element.ChildAttr("img.thumb", "src")
+		tag := element.ChildText(".note")
+
+		pager.List = append(pager.List, model.MovieInfo{
+			Id:    handleUrlToId(url),
+			Name:  name,
+			Thumb: thumb,
+			Url:   url,
+			Tag:   tag,
+		})
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	c.OnHTML(".dytop .dy_tit_big", func(element *colly.HTMLElement) {
+		element.ForEach("span", func(i int, element *colly.HTMLElement) {
+			if i == 0 {
+				pager.Total, _ = strconv.Atoi(element.Text)
+			}
+		})
+	})
+
+	c.OnHTML(".pagination", func(element *colly.HTMLElement) {
+		currentPageText := element.ChildText(".active span")
+		pageIndex := -1
+		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
+			tmpList := strings.Split(element.Attr("href"), "-")
+			if len(tmpList) != 4 {
+				return
+			}
+			n, _ := strconv.Atoi(tmpList[2])
+			if n > pageIndex {
+				pageIndex = n
+				pager.Total = pager.Limit * pageIndex
+			}
+		})
+
+		pager.Current, _ = strconv.Atoi(currentPageText)
+	})
+
+	err := c.Visit(fmt.Sprintf(nnSearchUrl, search, search, handleNNPageNumber(page)))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return pager
+}
+
+// 计算页数值，页数从0开始
+func handleNNPageNumber(page string) int {
+	// https://www.nunuyy2.org/so/僵尸-僵尸-0-.html 第一页
+	// https://www.nunuyy2.org/so/僵尸-僵尸-1-.html 第二页
+	// https://www.nunuyy2.org/so/僵尸-僵尸-9-.html 第十页
+
+	n, err := strconv.Atoi(page)
+	if err != nil {
+		return 0
+	}
+	if n <= 0 {
+		return 0
+	}
+	return n - 1
 }
