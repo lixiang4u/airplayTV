@@ -72,6 +72,10 @@ func handleNNVideoUrl(requestUrl, postData string, videoUrl *string) error {
 		return err
 	}
 	var m3u8Url = string(b)
+	if strings.Contains(m3u8Url, "script") && strings.Contains(m3u8Url, "body") {
+		log.Println("[nn.response.error]", m3u8Url[:50])
+		m3u8Url = "解析播放地址失败"
+	}
 	*videoUrl = m3u8Url
 	return nil
 }
