@@ -19,8 +19,11 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	case "nn":
 		x.instant = service.NNMovie{}
 		break
-	case "91my":
+	case "91":
 		x.instant = service.MYMovie{}
+		break
+	case "88":
+		x.instant = service.E{}
 		break
 	default:
 		x.instant = service.MYMovie{}
