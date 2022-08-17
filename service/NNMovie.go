@@ -159,8 +159,10 @@ func nnVideoSource(sid, vid string) model.Video {
 	var v = url.Values{}
 	v.Add("url", sid)
 	//v.Add("sign", strconv.FormatInt(time.Now().Unix(), 10))
-	_ = handleNNVideoUrl(v.Encode(), &video.Url)
+	_ = handleNNVideoUrl(v.Encode(), &video.Source)
 	video.Type = "hls" // m3u8 都是hls ???
+
+	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source)
 
 	return video
 }

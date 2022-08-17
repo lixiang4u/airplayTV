@@ -8,8 +8,6 @@ import (
 	"github.com/lixiang4u/ShotTv-api/model"
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
-	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -300,46 +298,11 @@ func czParseVideoSource(id, js string) (model.Video, error) {
 		}
 	}
 
-	var localFile = util.NewLocalVideoFileName(id, video.Source)
-
 	if !strings.Contains(video.Source, "aliyundrive.asia") {
 		return video, nil
 	}
 
-	err = czDownloadSourceFile(id, video.Source, localFile)
-	if err != nil {
-		return video, err
-	}
-	video.Url = util.GetLocalVideoFileUrl(localFile)
+	video.Url = HandleSrcM3U8FileToLocal(id, video.Source)
 
 	return video, nil
-}
-
-func czDownloadSourceFile(id, url, local string) (err error) {
-	if util.PathExist(local) {
-		return
-	}
-
-	c := colly.NewCollector()
-
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-
-	c.OnResponse(func(response *colly.Response) {
-		var f *os.File
-		if response.StatusCode == http.StatusOK {
-			f, err = os.OpenFile(local, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
-			_, err = f.Write(response.Body)
-		} else {
-			log.Println("[request.error]", response.StatusCode)
-		}
-	})
-
-	err = c.Visit(url)
-	if err != nil {
-		log.Println("[visit.error]", err.Error())
-	}
-
-	return err
 }
