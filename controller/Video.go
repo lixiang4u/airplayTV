@@ -22,9 +22,9 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	case "91":
 		x.instant = service.MYMovie{}
 		break
-	case "88":
-		x.instant = service.E{}
-		break
+	//case "88":// 资源不行，有些都不能播放？？？
+	//	x.instant = service.EightMovie{}
+	//	break
 	default:
 		x.instant = service.MYMovie{}
 		//ctx.JSON(http.StatusOK, gin.H{"msg": "source not exists"})

@@ -162,3 +162,12 @@ func myHandlePlayUrlId(url string) (id string) {
 	}
 	return
 }
+
+// 获取播放文件流程：
+//https://www.91mayi.com/vodplay/190119-1-30.html
+//=>
+//JS: "url": "mayi_....
+//=>
+//https://zj.shankuwang.com:8443/?url=mayi_cb52u6qXdjt2EuviqgoWCYpNnbRCAr3tZE9aGjb%2Fi%2BzDKmZoJSUGqTzs6B75QYq6iD4yXYfRNGn%2BSuZm30SufKP0IaBoamqFUlDtjZfhQA
+//=>
+//https://new.qqaku.com/20220817/YHUGLoN8/index.m3u8
