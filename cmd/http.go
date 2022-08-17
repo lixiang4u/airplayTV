@@ -72,11 +72,11 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/video/:id", new(controller.ResourceController).VideoSource)
 
 	// 统一api
-	r.GET("/api/video/search", new(controller.ResourceController).Search)
-	r.GET("/api/video/tag", new(controller.ResourceController).ListByTag)
-	r.GET("/api/video/tag/:tagName", new(controller.ResourceController).ListByTag)
-	r.GET("/api/video/detail/:id", new(controller.ResourceController).VideoDetail) // 视频详细信息
-	r.GET("/api/video/source/:id", new(controller.ResourceController).VideoSource) // 视频播放信息
+	r.GET("/api/video/search", new(controller.VideoController).Search)
+	r.GET("/api/video/tag", new(controller.VideoController).ListByTag)
+	r.GET("/api/video/tag/:tagName", new(controller.VideoController).ListByTag)
+	r.GET("/api/video/detail/:id", new(controller.VideoController).Detail) // 视频详细信息
+	r.GET("/api/video/source/:id", new(controller.VideoController).Source) // 视频播放信息
 	r.GET("/api/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})
