@@ -53,9 +53,10 @@ func (x VideoController) Detail(ctx *gin.Context) {
 }
 
 func (x VideoController) Source(ctx *gin.Context) {
-	var id = ctx.Param("id")
+	var id = ctx.Param("id")   // 播放id
+	var vid = ctx.Query("vid") // 视频id
 
-	var data = x.getInstance(ctx).Source(id)
+	var data = x.getInstance(ctx).Source(id, vid)
 
 	ctx.JSON(http.StatusOK, data)
 }

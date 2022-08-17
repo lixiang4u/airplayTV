@@ -7,5 +7,5 @@ type IVideoApi interface {
 	ListByTag(tagName, page string) model.Pager
 	Search(search, page string) model.Pager
 	Detail(id string) model.MovieInfo
-	Source(id string) model.Video
+	Source(sid, vid string) model.Video
 }

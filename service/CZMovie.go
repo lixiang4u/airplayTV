@@ -40,8 +40,8 @@ func (x CZMovie) Detail(id string) model.MovieInfo {
 	return czVideoDetail(id)
 }
 
-func (x CZMovie) Source(id string) model.Video {
-	return czVideoSource(id)
+func (x CZMovie) Source(sid, vid string) model.Video {
+	return czVideoSource(sid, vid)
 }
 
 //========================================================================
@@ -186,7 +186,7 @@ func czVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-func czVideoSource(id string) model.Video {
+func czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{}
 	var err error
 
@@ -206,7 +206,7 @@ func czVideoSource(id string) model.Video {
 			}
 		}
 		if findLine != "" {
-			video, err = czParseVideoSource(id, findLine)
+			video, err = czParseVideoSource(sid, findLine)
 
 			bs, _ := json.MarshalIndent(video, "", "\t")
 			log.Println(fmt.Sprintf("[video] %s", string(bs)))
@@ -221,7 +221,7 @@ func czVideoSource(id string) model.Video {
 		video.Name = element.ChildText("h3")
 	})
 
-	err = c.Visit(fmt.Sprintf(czPlayUrl, id))
+	err = c.Visit(fmt.Sprintf(czPlayUrl, sid))
 	if err != nil {
 		log.Println("[ERR]", err.Error())
 	}

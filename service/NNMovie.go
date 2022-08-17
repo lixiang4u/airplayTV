@@ -36,9 +36,8 @@ func (x NNMovie) Detail(id string) model.MovieInfo {
 	return nnVideoDetail(id)
 }
 
-func (x NNMovie) Source(id string) model.Video {
-	log.Println("[ID.......]", id)
-	return nnVideoSource(id)
+func (x NNMovie) Source(sid, vid string) model.Video {
+	return nnVideoSource(sid, vid)
 }
 
 //========================================================================
@@ -137,19 +136,31 @@ func nnVideoDetail(id string) model.MovieInfo {
 
 // 使用chromedp直接请求页面关联的播放数据m3u8
 // 应该可以直接从chromedp拿到m3u8地址，但是没跑通，可以先拿到请求所需的所有上下文，然后http.Post拿数据
-func nnVideoSource(id string) model.Video {
-	var video = model.Video{}
+func nnVideoSource(sid, vid string) model.Video {
+	var video = model.Video{Id: sid, Source: sid}
+
+	//获取基础信息
+	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+
+	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
+		video.Name = element.ChildText(".product-title")
+		video.Thumb = element.ChildAttr(".thumb", "src")
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	err := c.Visit(fmt.Sprintf(nnPlayUrl, vid))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
 
 	var v = url.Values{}
-	v.Add("url", id)
+	v.Add("url", sid)
 	//v.Add("sign", strconv.FormatInt(time.Now().Unix(), 10))
-
-	postData, _ := url.QueryUnescape(v.Encode())
-
-	err := handleNNVideoUrl(postData, &video.Url)
-	if err != nil {
-		video.Name = "[err]" + err.Error()
-	}
+	_ = handleNNVideoUrl(v.Encode(), &video.Url)
+	video.Type = "hls" // m3u8 都是hls ???
 
 	return video
 }
