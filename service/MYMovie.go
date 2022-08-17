@@ -13,8 +13,8 @@ import (
 
 var (
 	myM3u8Url   = ""
-	myPlayUrl   = ""
-	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%s---.html" // https://www.91mayi.com/vodsearch/天----------917---.html
+	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"                //https://www.91mayi.com/voddetail/110956.html
+	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html" // https://www.91mayi.com/vodsearch/天----------917---.html
 )
 
 type MYMovie struct{}
@@ -76,7 +76,7 @@ func myListBySearch(search, page string) model.Pager {
 		pager.Total = pager.Limit * totalIndex
 	})
 
-	err := c.Visit(fmt.Sprintf(mySearchUrl, search, page))
+	err := c.Visit(fmt.Sprintf(mySearchUrl, search, util.HandlePageNumber(page)))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
@@ -92,25 +92,26 @@ func myVideoDetail(id string) model.MovieInfo {
 
 	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
 
-	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
-		info.Thumb = element.ChildAttr(".thumb", "src")
-		info.Name = element.ChildText(".product-title")
-		info.Intro = element.ChildText(".product-excerpt span")
+	c.OnHTML(".col-md-wide-75", func(element *colly.HTMLElement) {
+		info.Thumb = element.ChildAttr("a.v-thumb .lazyload", "data-original")
+		info.Name = element.ChildAttr("a.v-thumb", "title")
+		info.Intro = element.ChildText(".detail-content")
+		info.Tag = element.ChildText(".pic-text")
 	})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, id))
+	err := c.Visit(fmt.Sprintf(myDetailUrl, id))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
-	urls, err := handleNNVideoPlayLinks(id)
 
-	if err == nil {
-		info.Links = wrapLinks(urls)
-	}
+	//urls, err := handleNNVideoPlayLinks(id)
+	//if err == nil {
+	//	info.Links = wrapLinks(urls)
+	//}
 
 	return info
 }

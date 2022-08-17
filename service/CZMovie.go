@@ -15,7 +15,7 @@ import (
 
 var (
 	czTagUrl    = "https://www.czspp.com/%s/page/%d"
-	czSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%s"
+	czSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%d"
 	czDetailUrl = "https://www.czspp.com/movie/%s.html"
 	czPlayUrl   = "https://www.czspp.com/v_play/%s.html"
 )
@@ -140,7 +140,7 @@ func czListBySearch(query, page string) model.Pager {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(czSearchUrl, query, page))
+	err := c.Visit(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
