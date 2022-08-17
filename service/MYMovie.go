@@ -97,6 +97,17 @@ func myVideoDetail(id string) model.MovieInfo {
 		info.Name = element.ChildAttr("a.v-thumb", "title")
 		info.Intro = element.ChildText(".detail-content")
 		info.Tag = element.ChildText(".pic-text")
+		info.Url = element.ChildAttr("a.v-thumb", "href")
+	})
+
+	c.OnHTML(".stui-content__playlist", func(element *colly.HTMLElement) {
+		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
+			info.Links = append(info.Links, model.Link{
+				Id:   myHandlePlayUrlId(element.Attr("href")),
+				Name: element.Text,
+				Url:  element.Attr("href"),
+			})
+		})
 	})
 
 	c.OnRequest(func(request *colly.Request) {
@@ -107,11 +118,6 @@ func myVideoDetail(id string) model.MovieInfo {
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
-
-	//urls, err := handleNNVideoPlayLinks(id)
-	//if err == nil {
-	//	info.Links = wrapLinks(urls)
-	//}
 
 	return info
 }
@@ -147,4 +153,12 @@ func myVideoSource(sid, vid string) model.Video {
 	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source)
 
 	return video
+}
+
+func myHandlePlayUrlId(url string) (id string) {
+	tmpList := strings.Split(strings.Trim(strings.Trim(url, ".html"), "/"), "/")
+	if len(tmpList) == 2 {
+		return tmpList[1]
+	}
+	return
 }
