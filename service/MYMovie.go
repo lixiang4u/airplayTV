@@ -1,20 +1,23 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/ShotTv-api/model"
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
-	myM3u8Url   = ""
-	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"                //https://www.91mayi.com/voddetail/110956.html
-	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html" // https://www.91mayi.com/vodsearch/天----------917---.html
+	myPlayUrl   = "https://www.91mayi.com/vodplay/%s.html" //https://www.91mayi.com/vodplay/190119-1-30.html
+	myParseUrl  = "https://zj.shankuwang.com:8443/?url=%s" // 云解析
+	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"
+	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html"
 )
 
 type MYMovie struct{}
@@ -147,7 +150,7 @@ func myVideoSource(sid, vid string) model.Video {
 	var v = url.Values{}
 	v.Add("url", sid)
 	//v.Add("sign", strconv.FormatInt(time.Now().Unix(), 10))
-	_ = handleNNVideoUrl(v.Encode(), &video.Source)
+	//_ = handleMYVideoUrl(v.Encode(), &video.Source)
 	video.Type = "hls" // m3u8 都是hls ???
 
 	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source)
@@ -171,3 +174,64 @@ func myHandlePlayUrlId(url string) (id string) {
 //https://zj.shankuwang.com:8443/?url=mayi_cb52u6qXdjt2EuviqgoWCYpNnbRCAr3tZE9aGjb%2Fi%2BzDKmZoJSUGqTzs6B75QYq6iD4yXYfRNGn%2BSuZm30SufKP0IaBoamqFUlDtjZfhQA
 //=>
 //https://new.qqaku.com/20220817/YHUGLoN8/index.m3u8
+
+func Tbug(id string) (url0 string) {
+	tmpSid := myFetchPlayInfo(id)
+	url0 = myCloudParse(tmpSid)
+	return url0
+}
+
+func myFetchPlayInfo(id string) (tmpSid string) {
+	c := colly.NewCollector()
+
+	c.OnResponse(func(response *colly.Response) {
+		// "url":"mayi_f89adGIRDSJxhFCwJcrVTunxt3eQ%2B8xZgSn8fb0QQSKVbR5zTdl0fF890A8oZpC9IYqnL5ScIxuA%2BWldL3%2Fc2Uwy48E","url_next":"mayi_ac5aTQEQLN%2BKpYBZiGiLgOqVh2cE83GT1hLc8M8","from":"iqiyi"
+		regex := regexp.MustCompile(`"url":"(\S+)","url_next"`)
+		matches := regex.FindStringSubmatch(string(response.Body))
+		if len(matches) > 1 && strings.HasPrefix(matches[1], "mayi_") {
+			tmpSid = matches[1]
+		}
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	err := c.Visit(fmt.Sprintf(myPlayUrl, id))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return
+}
+
+func myCloudParse(id string) (url string) {
+	c := colly.NewCollector()
+
+	c.OnResponse(func(response *colly.Response) {
+		regex := regexp.MustCompile(`var video_url = '(\S+)';`)
+		matches := regex.FindStringSubmatch(string(response.Body))
+
+		//log.Println("[resp.body]", string(response.Body))
+		log.Println("[matches]", matches)
+
+		b, _ := json.MarshalIndent(matches, "", "\t")
+		log.Println("[matches.o]", string(b))
+
+		if len(matches) > 1 && strings.HasPrefix(matches[1], "http") {
+			url = matches[1]
+		}
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	log.Println("[V]", fmt.Sprintf(myParseUrl, id))
+	err := c.Visit(fmt.Sprintf(myParseUrl, id))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return
+}
