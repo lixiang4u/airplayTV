@@ -132,16 +132,16 @@ func myVideoSource(sid, vid string) model.Video {
 	//获取基础信息
 	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
 
-	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
-		video.Name = element.ChildText(".product-title")
-		video.Thumb = element.ChildAttr(".thumb", "src")
+	c.OnHTML(".stui-content__thumb", func(element *colly.HTMLElement) {
+		video.Name = element.ChildAttr(".v-thumb", "title")
+		video.Thumb = element.ChildAttr(".v-thumb .lazyload", "src")
 	})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, sid))
+	err := c.Visit(fmt.Sprintf(myDetailUrl, vid))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
