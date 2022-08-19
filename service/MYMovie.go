@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/ShotTv-api/model"
@@ -211,16 +210,19 @@ func myCloudParse(id string) (url string) {
 	c.OnResponse(func(response *colly.Response) {
 		regex := regexp.MustCompile(`var video_url = '(\S+)';`)
 		matches := regex.FindStringSubmatch(string(response.Body))
-
-		//log.Println("[resp.body]", string(response.Body))
-		log.Println("[matches]", matches)
-
-		b, _ := json.MarshalIndent(matches, "", "\t")
-		log.Println("[matches.o]", string(b))
-
-		if len(matches) > 1 && strings.HasPrefix(matches[1], "http") {
-			url = matches[1]
+		// 没匹配到
+		if len(matches) <= 1 {
+			return
 		}
+		// 是不http协议数据
+		if !strings.HasPrefix(matches[1], "http") {
+			return
+		}
+		// 返回的iqiyi错误地址可能就是html结尾的
+		if strings.HasSuffix(matches[1], ".html") {
+			return
+		}
+		url = matches[1]
 	})
 
 	c.OnRequest(func(request *colly.Request) {
