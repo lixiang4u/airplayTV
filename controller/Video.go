@@ -11,7 +11,7 @@ type VideoController struct {
 }
 
 func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
-	var source = ctx.Query("source")
+	var source = ctx.Query("_source")
 	switch source {
 	case "cz":
 		x.instant = service.CZMovie{}
