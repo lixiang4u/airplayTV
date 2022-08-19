@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 	"github.com/gocolly/colly"
+	"github.com/grafov/m3u8"
 	"github.com/lixiang4u/ShotTv-api/model"
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -141,18 +141,13 @@ func myVideoSource(sid, vid string) model.Video {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, vid))
+	err := c.Visit(fmt.Sprintf(nnPlayUrl, sid))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
 
-	var v = url.Values{}
-	v.Add("url", sid)
-	//v.Add("sign", strconv.FormatInt(time.Now().Unix(), 10))
-	//_ = handleMYVideoUrl(v.Encode(), &video.Source)
-	video.Type = "hls" // m3u8 都是hls ???
-
-	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source)
+	video.Type = "hls"
+	video.Url = handleMYVideoUrl(sid)
 
 	return video
 }
@@ -165,6 +160,12 @@ func myHandlePlayUrlId(url string) (id string) {
 	return
 }
 
+func handleMYVideoUrl(id string) (tmpUrl string) {
+	tmpSid := myFetchPlayInfo(id)
+	tmpUrl = myCloudParse(tmpSid)
+	return tmpUrl
+}
+
 // 获取播放文件流程：
 //https://www.91mayi.com/vodplay/190119-1-30.html
 //=>
@@ -173,12 +174,6 @@ func myHandlePlayUrlId(url string) (id string) {
 //https://zj.shankuwang.com:8443/?url=mayi_cb52u6qXdjt2EuviqgoWCYpNnbRCAr3tZE9aGjb%2Fi%2BzDKmZoJSUGqTzs6B75QYq6iD4yXYfRNGn%2BSuZm30SufKP0IaBoamqFUlDtjZfhQA
 //=>
 //https://new.qqaku.com/20220817/YHUGLoN8/index.m3u8
-
-func Tbug(id string) (url0 string) {
-	tmpSid := myFetchPlayInfo(id)
-	url0 = myCloudParse(tmpSid)
-	return url0
-}
 
 func myFetchPlayInfo(id string) (tmpSid string) {
 	c := colly.NewCollector()
@@ -204,7 +199,7 @@ func myFetchPlayInfo(id string) (tmpSid string) {
 	return
 }
 
-func myCloudParse(id string) (url string) {
+func myCloudParse(id string) (tmpUrl string) {
 	c := colly.NewCollector()
 
 	c.OnResponse(func(response *colly.Response) {
@@ -222,15 +217,52 @@ func myCloudParse(id string) (url string) {
 		if strings.HasSuffix(matches[1], ".html") {
 			return
 		}
-		url = matches[1]
+		tmpUrl = matches[1]
 	})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	log.Println("[V]", fmt.Sprintf(myParseUrl, id))
 	err := c.Visit(fmt.Sprintf(myParseUrl, id))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return
+}
+
+func myCheckVideoUrlRedirect(tmpUrl string) {
+	// https://new.qqaku.com/20220727/kBNdvBbi/index.m3u8
+
+	c := colly.NewCollector()
+
+	c.OnResponse(func(response *colly.Response) {
+
+		playList, listType, err := m3u8.DecodeFrom(strings.NewReader(string(response.Body)), true)
+		if err != nil {
+			log.Println("[decode.err]", err)
+			return
+		}
+
+		switch listType {
+		case m3u8.MEDIA:
+			mediapl := playList.(*m3u8.MediaPlaylist)
+			fmt.Printf("[0x01] %+v\n", mediapl)
+		case m3u8.MASTER:
+			masterpl := playList.(*m3u8.MasterPlaylist)
+			fmt.Printf("[0x02]%+v\n", masterpl)
+			//log.Println("[]", masterpl.)
+		}
+
+		//log.Println("[redirect]", string(response.Body))
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	err := c.Visit(tmpUrl)
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
