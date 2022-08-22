@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lixiang4u/ShotTv-api/cmd"
+	"github.com/lixiang4u/ShotTv-api/util"
 	"github.com/spf13/viper"
 	"log"
 )
@@ -15,6 +16,7 @@ func init() {
 }
 
 func main() {
+	util.InitLog()
 
 	cmd.Execute()
 
