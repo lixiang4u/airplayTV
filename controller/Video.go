@@ -26,7 +26,7 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	//	x.instant = service.EightMovie{}
 	//	break
 	default:
-		x.instant = service.MYMovie{}
+		x.instant = service.NNMovie{}
 		//ctx.JSON(http.StatusOK, gin.H{"msg": "source not exists"})
 	}
 	return x.instant
