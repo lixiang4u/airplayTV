@@ -237,8 +237,11 @@ func handleNNVideoPlayLinks(id string) (urls []string, err error) {
 	}
 
 	for _, tmpList := range res {
-		for _, url := range tmpList.([]interface{}) {
-			urls = append(urls, url.(string))
+		for _, tmpUrl := range tmpList.([]interface{}) {
+			if tmpUrl == nil {
+				continue
+			}
+			urls = append(urls, tmpUrl.(string))
 		}
 	}
 
