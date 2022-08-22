@@ -48,19 +48,19 @@ func nnListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 24 // 每页24条
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".lists-content li", func(element *colly.HTMLElement) {
 		name := element.ChildText("h2 a")
-		url := element.ChildAttr("a.thumbnail", "href")
+		tmpUrl := element.ChildAttr("a.thumbnail", "href")
 		thumb := element.ChildAttr("img.thumb", "src")
 		tag := element.ChildText(".note")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    util.CZHandleUrlToId(url),
+			Id:    util.CZHandleUrlToId(tmpUrl),
 			Name:  name,
 			Thumb: thumb,
-			Url:   url,
+			Url:   tmpUrl,
 			Tag:   tag,
 		})
 	})
@@ -109,7 +109,7 @@ func nnVideoDetail(id string) model.MovieInfo {
 
 	info.Id = id
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
 		info.Thumb = element.ChildAttr(".thumb", "src")
@@ -140,7 +140,7 @@ func nnVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
 
 	//获取基础信息
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
 		video.Name = element.ChildText(".product-title")

@@ -45,7 +45,7 @@ func myListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 10
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".col-lg-wide-75 .stui-vodlist__media li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".title a")
@@ -92,7 +92,7 @@ func myVideoDetail(id string) model.MovieInfo {
 
 	info.Id = id
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".col-md-wide-75", func(element *colly.HTMLElement) {
 		info.Thumb = element.ChildAttr("a.v-thumb .lazyload", "data-original")
@@ -130,7 +130,7 @@ func myVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
 
 	//获取基础信息
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".stui-content__thumb", func(element *colly.HTMLElement) {
 		video.Name = element.ChildAttr(".v-thumb", "title")

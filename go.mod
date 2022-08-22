@@ -3,12 +3,16 @@ module github.com/lixiang4u/ShotTv-api
 go 1.17
 
 require (
+	github.com/chromedp/cdproto v0.0.0-20220812200530-d0d83820bffc
+	github.com/chromedp/chromedp v0.8.4
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gocolly/colly v1.2.0
 	github.com/gohouse/gorose/v2 v2.1.12
 	github.com/gorilla/websocket v1.5.0
+	github.com/grafov/m3u8 v0.11.1
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lixiang4u/go-websocket v0.0.0-20210703012044-cbbff2f7473b
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
@@ -20,8 +24,6 @@ require (
 	github.com/antchfx/htmlquery v1.2.5 // indirect
 	github.com/antchfx/xmlquery v1.3.12 // indirect
 	github.com/antchfx/xpath v1.2.1 // indirect
-	github.com/chromedp/cdproto v0.0.0-20220812200530-d0d83820bffc // indirect
-	github.com/chromedp/chromedp v0.8.4 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -49,6 +51,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/lestrrat-go/strftime v1.0.6 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -57,6 +60,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect

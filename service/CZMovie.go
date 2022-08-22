@@ -52,7 +52,7 @@ func czListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".mi_cont .mi_ne_kd ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
@@ -105,7 +105,7 @@ func czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	c := colly.NewCollector(colly.CacheDir(util.GetCollyCacheDir()))
+	c := colly.NewCollector()
 
 	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
