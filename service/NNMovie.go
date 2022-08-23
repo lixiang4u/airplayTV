@@ -6,7 +6,6 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/ShotTv-api/model"
-	"github.com/lixiang4u/ShotTv-api/util"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 
 var (
 	nnM3u8Url   = "https://www.nunuyy2.org/url.php"
-	nnPlayUrl   = "https://www.nunuyy2.org/dianying/%s.html"
+	nnPlayUrl   = "https://www.nunuyy2.org/%s.html"
 	nnSearchUrl = "https://www.nunuyy2.org/so/%s-%s-%d-.html"
 )
 
@@ -57,7 +56,7 @@ func nnListBySearch(search, page string) model.Pager {
 		tag := element.ChildText(".note")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    util.CZHandleUrlToId(tmpUrl),
+			Id:    nnHandleUrlToId(tmpUrl),
 			Name:  name,
 			Thumb: thumb,
 			Url:   tmpUrl,
@@ -107,7 +106,14 @@ func nnListBySearch(search, page string) model.Pager {
 func nnVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	info.Id = id
+	// dianying-71677 | zongyi-71677
+	tmpList := strings.Split(id, "-")
+	idPathUrl := strings.Join(tmpList, "/")
+	if len(tmpList) != 2 {
+		return info
+	}
+
+	info.Id = tmpList[1]
 
 	c := colly.NewCollector()
 
@@ -121,11 +127,11 @@ func nnVideoDetail(id string) model.MovieInfo {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, id))
+	err := c.Visit(fmt.Sprintf(nnPlayUrl, idPathUrl))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
-	urls, err := handleNNVideoPlayLinks(id)
+	urls, err := handleNNVideoPlayLinks(idPathUrl)
 
 	if err == nil {
 		info.Links = wrapLinks(urls)
@@ -209,7 +215,7 @@ func handleNNPageNumber(page string) int {
 }
 
 // 根据视频id获取播放列表
-func handleNNVideoPlayLinks(id string) (urls []string, err error) {
+func handleNNVideoPlayLinks(idPathUrl string) (urls []string, err error) {
 	var res []interface{}
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -221,14 +227,14 @@ func handleNNVideoPlayLinks(id string) (urls []string, err error) {
 
 	err = chromedp.Run(
 		ctx,
-		chromedp.Navigate(fmt.Sprintf(nnPlayUrl, id)),
+		chromedp.Navigate(fmt.Sprintf(nnPlayUrl, idPathUrl)),
 		chromedp.Evaluate(`urls;`, &res),
 	)
 	if err != nil && !strings.Contains(err.Error(), "net::ERR_ABORTED") {
 		// Note: Ignoring the net::ERR_ABORTED page error is essential here
 		// since downloads will cause this error to be emitted, although the
 		// download will still succeed.
-		log.Println("[network]", err)
+		log.Println("[network.error]", err)
 		return
 	}
 	if res == nil {
@@ -258,4 +264,10 @@ func wrapLinks(urls []string) []model.Link {
 		})
 	}
 	return links
+}
+
+func nnHandleUrlToId(tmpUrl string) string {
+	tmpUrl = strings.TrimRight(tmpUrl, ".html")
+	tmpUrl = strings.ReplaceAll(tmpUrl, "/", "-")
+	return strings.TrimLeft(tmpUrl, "-")
 }
