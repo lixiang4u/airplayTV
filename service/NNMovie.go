@@ -113,7 +113,7 @@ func nnVideoDetail(id string) model.MovieInfo {
 		return info
 	}
 
-	info.Id = tmpList[1]
+	info.Id = id
 
 	c := colly.NewCollector()
 
@@ -144,6 +144,8 @@ func nnVideoDetail(id string) model.MovieInfo {
 // 应该可以直接从chromedp拿到m3u8地址，但是没跑通，可以先拿到请求所需的所有上下文，然后http.Post拿数据
 func nnVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
+
+	vid = strings.ReplaceAll(vid, "-", "/")
 
 	//获取基础信息
 	c := colly.NewCollector()
