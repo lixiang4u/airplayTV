@@ -66,3 +66,29 @@ func (x VideoController) Source(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, data)
 }
+
+func (x VideoController) ListByTagV2(ctx *gin.Context) {
+	var tagName = ctx.Query("tagName")
+	var page = ctx.Query("p")
+
+	var data = x.getInstance(ctx).ListByTag(tagName, page)
+
+	ctx.JSON(http.StatusOK, data)
+}
+
+func (x VideoController) DetailV2(ctx *gin.Context) {
+	var id = ctx.Query("id")
+
+	var data = x.getInstance(ctx).Detail(id)
+
+	ctx.JSON(http.StatusOK, data)
+}
+
+func (x VideoController) SourceV2(ctx *gin.Context) {
+	var id = ctx.Query("id")   // 播放id
+	var vid = ctx.Query("vid") // 视频id
+
+	var data = x.getInstance(ctx).Source(id, vid)
+
+	ctx.JSON(http.StatusOK, data)
+}
