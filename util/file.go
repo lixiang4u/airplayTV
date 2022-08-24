@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	url2 "net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,13 +30,22 @@ func MkdirAll(path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
 
+func handlePureUrl(rawUrl string) string {
+	tmpUrl, err := url2.Parse(rawUrl)
+	if err != nil {
+		return rawUrl
+	}
+	return fmt.Sprintf("%s://%s%s", tmpUrl.Scheme, tmpUrl.Host, tmpUrl.Path)
+}
+
 // 根据视频id生成视频本地存储地址
-func NewLocalVideoFileName(id, url string) string {
-	hash := StringMd5(fmt.Sprintf("%s,%s", id, url))
+func NewLocalVideoFileName(id, rawUrl string) string {
+	pureUrl := handlePureUrl(rawUrl)
+	hash := StringMd5(fmt.Sprintf("%s,%s", id, rawUrl))
 	path := fmt.Sprintf("%s/app/m3u8/%s", AppPath(), hash[0:2])
 	file := fmt.Sprintf("%s/%s", path, hash)
-	if filepath.Ext(url) != "" {
-		file = fmt.Sprintf("%s.%s", file, strings.Trim(filepath.Ext(url), "."))
+	if filepath.Ext(pureUrl) != "" {
+		file = fmt.Sprintf("%s.%s", file, strings.Trim(filepath.Ext(pureUrl), "."))
 	}
 	_ = MkdirAll(path)
 
