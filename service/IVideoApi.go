@@ -6,6 +6,7 @@ import (
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -19,8 +20,15 @@ type IVideoApi interface {
 
 func HandleSrcM3U8FileToLocal(id, sourceUrl string) string {
 	log.Println("[HandleSrcM3U8FileToLocal]", id, sourceUrl)
+	tmpUrl, err := url.Parse(sourceUrl)
+
+	// hd.njeere.com 视频文件加密了，不能直接下载m3u8文件到本地服务器
+	if err == nil && util.StringInList(tmpUrl.Hostname(), []string{"hd.njeere.com"}) {
+		return sourceUrl
+	}
+
 	var localFile = util.NewLocalVideoFileName(id, sourceUrl)
-	err := downloadSourceFile(id, sourceUrl, localFile)
+	err = downloadSourceFile(id, sourceUrl, localFile)
 	if err != nil {
 		log.Println("[download.m3u8.error]", err)
 		return ""

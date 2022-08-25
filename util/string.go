@@ -29,3 +29,14 @@ func HandlePageNumber(page string) int {
 	}
 	return n
 }
+
+// 判断字符串是否在某个列表中
+func StringInList(str string, strList []string) bool {
+	for _, el := range strList {
+		// 不区分大小写到字符比较
+		if strings.EqualFold(el, str) {
+			return true
+		}
+	}
+	return false
+}
