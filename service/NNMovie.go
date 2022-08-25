@@ -164,9 +164,16 @@ func nnVideoSource(sid, vid string) model.Video {
 		log.Println("[visit.error]", err.Error())
 	}
 
+	// sign 值来源：(sign = parseInt("0x62AB43C9") + m3u8.length)
+	// 1、通过console.log=null;让js报错，
+	// 2、进入movie.js的VM代码(因为底层循环了console.log()和console.clear()，所以可以直接查看到解码后到js源文件)
+	// 3、定位到"url.php"(解析m3u8的XMLHttpRequest请求)
+	// 4、往上找到sign参数的组成方式
+
 	var v = url.Values{}
 	v.Add("url", sid)
-	//v.Add("sign", strconv.FormatInt(time.Now().Unix(), 10))
+	v.Add("sign", strconv.FormatUint(1655391177+uint64(len(sid)), 10))
+
 	_ = handleNNVideoUrl(v.Encode(), &video.Source)
 	video.Type = "hls" // m3u8 都是hls ???
 
