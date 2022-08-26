@@ -89,7 +89,9 @@ func handleEXTM3UHost(data []byte, host string) []byte {
 			if val == nil {
 				continue
 			}
-			mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+			if util.IsHttpUrl(val.URI) == false {
+				mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+			}
 		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
@@ -97,7 +99,9 @@ func handleEXTM3UHost(data []byte, host string) []byte {
 			if val == nil {
 				continue
 			}
-			masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+			if util.IsHttpUrl(val.URI) == false {
+				masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+			}
 		}
 	}
 
