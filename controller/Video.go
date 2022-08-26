@@ -22,6 +22,9 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	case "91":
 		x.instant = service.MYMovie{}
 		break
+	case "my":
+		x.instant = service.MYMovie{}
+		break
 	//case "88":// 资源不行，有些都不能播放？？？
 	//	x.instant = service.EightMovie{}
 	//	break
