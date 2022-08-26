@@ -298,10 +298,6 @@ func czParseVideoSource(id, js string) (model.Video, error) {
 		}
 	}
 
-	if !strings.Contains(video.Source, "aliyundrive.asia") {
-		return video, nil
-	}
-
 	video.Url = HandleSrcM3U8FileToLocal(id, video.Source)
 
 	return video, nil

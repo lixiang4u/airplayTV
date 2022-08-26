@@ -83,14 +83,20 @@ func handleEXTM3UHost(data []byte, host string) []byte {
 
 	switch listType {
 	case m3u8.MEDIA:
-		//mediapl := playList.(*m3u8.MediaPlaylist)
-		//fmt.Printf("[MEDIA] %+v\n", mediapl)
+		mediapl := playList.(*m3u8.MediaPlaylist)
+		for idx, val := range mediapl.Segments {
+			if val == nil {
+				continue
+			}
+			mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
-		//fmt.Printf("[MASTER] %+v\n", masterpl.Variants)
 		for idx, val := range masterpl.Variants {
+			if val == nil {
+				continue
+			}
 			masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
-			//fmt.Println("[.URI]", val.URI)
 		}
 	}
 
