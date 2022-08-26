@@ -35,7 +35,7 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string) string {
 	err = downloadSourceFile(id, sourceUrl, localFile)
 	if err != nil {
 		log.Println("[download.m3u8.error]", err)
-		return ""
+		return sourceUrl
 	}
 	return util.GetLocalVideoFileUrl(localFile)
 }
