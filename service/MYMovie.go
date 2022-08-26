@@ -17,12 +17,13 @@ var (
 	myParseUrl  = "https://zj.shankuwang.com:8443/?url=%s" // 云解析
 	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"
 	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html"
+	myTagUrl    = "https://www.91mayi.com/vodtype/%s-%d.html"
 )
 
 type MYMovie struct{}
 
 func (x MYMovie) ListByTag(tagName, page string) model.Pager {
-	return myListBySearch("天", page)
+	return myListByTag(getTagNumber(tagName), page)
 }
 
 func (x MYMovie) Search(search, page string) model.Pager {
@@ -40,6 +41,64 @@ func (x MYMovie) Source(sid, vid string) model.Video {
 //========================================================================
 //==============================实际业务处理逻辑============================
 //========================================================================
+
+//https://www.91mayi.com/vodtype/1.html 电影
+//https://www.91mayi.com/vodtype/2.html 连续剧
+//https://www.91mayi.com/vodtype/3.html 综艺
+//https://www.91mayi.com/vodtype/4.html 动漫
+func getTagNumber(tagName string) (tagNumber string) {
+	tagNumber = tagName
+	switch tagName {
+	case "movie_bt":
+		tagNumber = "1"
+	}
+	return
+}
+
+func myListByTag(tagName, page string) model.Pager {
+	var pager = model.Pager{}
+	pager.Limit = 36
+
+	c := colly.NewCollector()
+
+	c.OnHTML(".stui-vodlist .stui-vodlist__box", func(element *colly.HTMLElement) {
+		name := element.ChildAttr(".stui-vodlist__thumb", "title")
+		url1 := element.ChildAttr(".stui-vodlist__thumb", "href")
+		thumb := element.ChildAttr(".stui-vodlist__thumb", "data-original")
+		tag := element.ChildText(".pic-text")
+
+		pager.List = append(pager.List, model.MovieInfo{
+			Id:    util.CZHandleUrlToId(url1),
+			Name:  name,
+			Thumb: thumb,
+			Url:   url1,
+			Tag:   tag,
+		})
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	c.OnHTML(".stui-page .num", func(element *colly.HTMLElement) {
+		tmpList := strings.Split(element.Text, "/")
+		if len(tmpList) != 2 {
+			return
+		}
+		currentIndex, _ := strconv.Atoi(tmpList[0])
+		totalIndex, _ := strconv.Atoi(tmpList[1])
+
+		pager.Current = currentIndex
+		pager.Total = pager.Limit * totalIndex
+	})
+
+	err := c.Visit(fmt.Sprintf(myTagUrl, tagName, util.HandlePageNumber(page)))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return pager
+}
 
 func myListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
