@@ -262,7 +262,7 @@ func handleNNVideoPlayLinks(idPathUrl string) (links []model.Link, err error) {
 				tmpGroup = fmt.Sprintf("group_%d", idx0+1)
 			}
 			links = append(links, model.Link{
-				Id:    strconv.Itoa(counter),
+				Id:    tmpUrl.(string),
 				Name:  fmt.Sprintf("资源%d", idx1+1),
 				Url:   tmpUrl.(string),
 				Group: tmpGroup,
