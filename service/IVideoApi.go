@@ -1,13 +1,17 @@
 package service
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/gocolly/colly"
+	"github.com/grafov/m3u8"
 	"github.com/lixiang4u/ShotTv-api/model"
 	"github.com/lixiang4u/ShotTv-api/util"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 // 定义视频源操作方法，支持多源站接入
@@ -50,8 +54,9 @@ func downloadSourceFile(id, url, local string) (err error) {
 	c.OnResponse(func(response *colly.Response) {
 		var f *os.File
 		if response.StatusCode == http.StatusOK {
+			bs := handleEXTM3UHost(response.Body, util.HandleHost(url))
 			f, err = os.OpenFile(local, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
-			_, err = f.Write(response.Body)
+			_, err = f.Write(bs)
 		} else {
 			log.Println("[request.error]", response.StatusCode)
 		}
@@ -63,4 +68,31 @@ func downloadSourceFile(id, url, local string) (err error) {
 	}
 
 	return err
+}
+
+// 处理m3u8内容（修正地址问题）
+func handleEXTM3UHost(data []byte, host string) []byte {
+	if host == "" {
+		return data
+	}
+	playList, listType, err := m3u8.DecodeFrom(bytes.NewBuffer(data), true)
+	if err != nil {
+		log.Println("[m3u8.DecodeFrom.error]", err)
+		return data
+	}
+
+	switch listType {
+	case m3u8.MEDIA:
+		//mediapl := playList.(*m3u8.MediaPlaylist)
+		//fmt.Printf("[MEDIA] %+v\n", mediapl)
+	case m3u8.MASTER:
+		masterpl := playList.(*m3u8.MasterPlaylist)
+		//fmt.Printf("[MASTER] %+v\n", masterpl.Variants)
+		for idx, val := range masterpl.Variants {
+			masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+			//fmt.Println("[.URI]", val.URI)
+		}
+	}
+
+	return playList.Encode().Bytes()
 }
