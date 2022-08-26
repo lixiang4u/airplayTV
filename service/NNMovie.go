@@ -131,10 +131,10 @@ func nnVideoDetail(id string) model.MovieInfo {
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
-	urls, err := handleNNVideoPlayLinks(idPathUrl)
+	links, err := handleNNVideoPlayLinks(idPathUrl)
 
 	if err == nil {
-		info.Links = wrapLinks(urls)
+		info.Links = links
 	}
 
 	return info
@@ -224,7 +224,7 @@ func handleNNPageNumber(page string) int {
 }
 
 // 根据视频id获取播放列表
-func handleNNVideoPlayLinks(idPathUrl string) (urls []string, err error) {
+func handleNNVideoPlayLinks(idPathUrl string) (links []model.Link, err error) {
 	var res []interface{}
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -251,12 +251,23 @@ func handleNNVideoPlayLinks(idPathUrl string) (urls []string, err error) {
 		return
 	}
 
-	for _, tmpList := range res {
-		for _, tmpUrl := range tmpList.([]interface{}) {
+	var counter = 1
+	for idx0, tmpList := range res {
+		var tmpGroup = ""
+		for idx1, tmpUrl := range tmpList.([]interface{}) {
 			if tmpUrl == nil {
 				continue
 			}
-			urls = append(urls, tmpUrl.(string))
+			if idx1 == 0 {
+				tmpGroup = fmt.Sprintf("group_%d", idx0+1)
+			}
+			links = append(links, model.Link{
+				Id:    strconv.Itoa(counter),
+				Name:  fmt.Sprintf("资源%d", idx1+1),
+				Url:   tmpUrl.(string),
+				Group: tmpGroup,
+			})
+			counter++
 		}
 	}
 
