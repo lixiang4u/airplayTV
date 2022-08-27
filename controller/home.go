@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/lixiang4u/ShotTv-api/util"
 	go_websocket "github.com/lixiang4u/go-websocket"
 	"log"
 	"net/http"
@@ -95,4 +96,13 @@ func (p HomeController) VideoPlayInfo(c *gin.Context) {
 
 func (p HomeController) FullScreen(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "home/fullscreen.html", gin.H{})
+}
+
+// 预置环境检测
+func (p HomeController) EnvPredict(ctx *gin.Context) {
+	var data = gin.H{
+		"ua":    ctx.Request.UserAgent(),
+		"is_tv": util.IsTv(ctx.Request.UserAgent()),
+	}
+	ctx.JSON(http.StatusOK, data)
 }

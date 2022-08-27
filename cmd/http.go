@@ -72,6 +72,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/video/:id", new(controller.ResourceController).VideoSource)
 
 	// 统一api
+	r.GET("/api/env/predict", new(controller.HomeController).EnvPredict)
 	r.GET("/api/video/search", new(controller.VideoController).Search)
 	r.GET("/api/video/tag/:tagName", new(controller.VideoController).ListByTag)
 	r.GET("/api/video/detail/:id", new(controller.VideoController).Detail) // 视频详细信息

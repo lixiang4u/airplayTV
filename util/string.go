@@ -40,3 +40,8 @@ func StringInList(str string, strList []string) bool {
 	}
 	return false
 }
+
+// TV: Mozilla/5.0 (Linux; Android 10; BRAVIA VH1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.96 Mobile Safari/537.36
+func IsTv(ua string) bool {
+	return strings.Contains(ua, "BRAVIA")
+}
