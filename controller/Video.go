@@ -1,11 +1,16 @@
 package controller
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/lixiang4u/ShotTv-api/service"
+	go_websocket "github.com/lixiang4u/go-websocket"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type VideoController struct {
@@ -122,4 +127,27 @@ func (x VideoController) SourceV2(ctx *gin.Context) {
 	var data = x.getInstance(ctx).Source(id, vid)
 
 	ctx.JSON(http.StatusOK, data)
+}
+
+// 隔空播放，发websocket消息
+func (x VideoController) Airplay(ctx *gin.Context) {
+	var id = ctx.Query("id")              // 播放id
+	var vid = ctx.Query("vid")            // 视频id
+	var clientId = ctx.Query("client_id") // 客户端id
+
+	var d = gin.H{
+		"event":     "play",
+		"client_id": clientId,
+		"video":     x.getInstance(ctx).Source(id, vid),
+		"timestamp": time.Now().Unix(),
+	}
+	b, _ := json.MarshalIndent(d, "", "\t")
+
+	log.Println("[debug]", clientId, string(b))
+
+	if go_websocket.WSendMessage(clientId, websocket.TextMessage, b) == false {
+		ctx.JSON(http.StatusOK, gin.H{"code": 500, "msg": "发送失败或TV不在线", "data": nil})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
 }

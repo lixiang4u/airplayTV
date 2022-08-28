@@ -97,6 +97,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/video/tag", new(controller.VideoController).ListByTagV2)   // 支持非路径参数
 	r.GET("/api/video/detail", new(controller.VideoController).DetailV2)   // 支持非路径参数
 	r.GET("/api/video/source", new(controller.VideoController).SourceV2)   // 支持非路径参数
+	r.GET("/api/video/airplay", new(controller.VideoController).Airplay)   // 支持非路径参数
 	r.GET("/api/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})
