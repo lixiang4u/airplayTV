@@ -162,11 +162,13 @@ func myVideoDetail(id string) model.MovieInfo {
 	})
 
 	c.OnHTML(".stui-content__playlist", func(element *colly.HTMLElement) {
+		var groupId = fmt.Sprintf("group_%s", element.Attr("data-mid"))
 		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
 			info.Links = append(info.Links, model.Link{
-				Id:   myHandlePlayUrlId(element.Attr("href")),
-				Name: element.Text,
-				Url:  element.Attr("href"),
+				Id:    myHandlePlayUrlId(element.Attr("href")),
+				Name:  element.Text,
+				Url:   element.Attr("href"),
+				Group: groupId,
 			})
 		})
 	})
