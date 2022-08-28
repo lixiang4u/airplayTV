@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
+	"os"
+	"time"
 )
 
 var httpServerCmd = &cobra.Command{
@@ -18,6 +20,8 @@ var httpServerCmd = &cobra.Command{
 	Short: "start http server",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println(fmt.Sprintf("[AppPath] %s", util.AppPath()))
+
+		go Clock()
 
 		//_ = autotls.Run(NewRouter(), "tv.artools.cc")
 		//log.Println(viper.GetString("app.addr"))
@@ -28,6 +32,19 @@ var httpServerCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(httpServerCmd)
+}
+
+func Clock() {
+	defer func() { recover() }()
+
+	t := time.NewTicker(time.Second * 86400) // 一天后删除缓存
+	for {
+		select {
+		case <-t.C:
+			err := os.RemoveAll(fmt.Sprintf("%s/app/cache/colly/", util.AppPath()))
+			log.Println("[time.Ticker]", err)
+		}
+	}
 }
 
 // 初始化websocket

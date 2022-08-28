@@ -22,7 +22,7 @@ type IVideoApi interface {
 	Source(sid, vid string) model.Video
 }
 
-func HandleSrcM3U8FileToLocal(id, sourceUrl string) string {
+func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 	log.Println("[HandleSrcM3U8FileToLocal]", id, sourceUrl)
 	tmpUrl, err := url.Parse(sourceUrl)
 
@@ -33,7 +33,7 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string) string {
 	}
 
 	var localFile = util.NewLocalVideoFileName(id, sourceUrl)
-	err = downloadSourceFile(id, sourceUrl, localFile)
+	err = downloadSourceFile(id, sourceUrl, localFile, isCache)
 	if err != nil {
 		log.Println("[download.m3u8.error]", err)
 		return sourceUrl
@@ -41,12 +41,12 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string) string {
 	return util.GetLocalVideoFileUrl(localFile)
 }
 
-func downloadSourceFile(id, url, local string) (err error) {
+func downloadSourceFile(id, url, local string, isCache bool) (err error) {
 	if util.PathExist(local) {
 		return
 	}
 
-	c := colly.NewCollector()
+	c := Movie{IsCache: isCache}.NewColly()
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())

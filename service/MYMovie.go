@@ -20,22 +20,22 @@ var (
 	myTagUrl    = "https://www.91mayi.com/vodtype/%s-%d.html"
 )
 
-type MYMovie struct{}
+type MYMovie struct{ Movie }
 
 func (x MYMovie) ListByTag(tagName, page string) model.Pager {
-	return myListByTag(getTagNumber(tagName), page)
+	return x.myListByTag(getTagNumber(tagName), page)
 }
 
 func (x MYMovie) Search(search, page string) model.Pager {
-	return myListBySearch(search, page)
+	return x.myListBySearch(search, page)
 }
 
 func (x MYMovie) Detail(id string) model.MovieInfo {
-	return myVideoDetail(id)
+	return x.myVideoDetail(id)
 }
 
 func (x MYMovie) Source(sid, vid string) model.Video {
-	return myVideoSource(sid, vid)
+	return x.myVideoSource(sid, vid)
 }
 
 //========================================================================
@@ -55,11 +55,11 @@ func getTagNumber(tagName string) (tagNumber string) {
 	return
 }
 
-func myListByTag(tagName, page string) model.Pager {
+func (x MYMovie) myListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 36
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".stui-vodlist .stui-vodlist__box", func(element *colly.HTMLElement) {
 		name := element.ChildAttr(".stui-vodlist__thumb", "title")
@@ -100,11 +100,11 @@ func myListByTag(tagName, page string) model.Pager {
 	return pager
 }
 
-func myListBySearch(search, page string) model.Pager {
+func (x MYMovie) myListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 10
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".col-lg-wide-75 .stui-vodlist__media li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".title a")
@@ -146,12 +146,12 @@ func myListBySearch(search, page string) model.Pager {
 }
 
 // 根据id获取视频播放列表信息
-func myVideoDetail(id string) model.MovieInfo {
+func (x MYMovie) myVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
 	info.Id = id
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".col-md-wide-75", func(element *colly.HTMLElement) {
 		info.Thumb = element.ChildAttr("a.v-thumb .lazyload", "data-original")
@@ -165,7 +165,7 @@ func myVideoDetail(id string) model.MovieInfo {
 		var groupId = fmt.Sprintf("group_%s", element.Attr("data-mid"))
 		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
 			info.Links = append(info.Links, model.Link{
-				Id:    myHandlePlayUrlId(element.Attr("href")),
+				Id:    x.myHandlePlayUrlId(element.Attr("href")),
 				Name:  element.Text,
 				Url:   element.Attr("href"),
 				Group: groupId,
@@ -187,11 +187,11 @@ func myVideoDetail(id string) model.MovieInfo {
 
 // 使用chromedp直接请求页面关联的播放数据m3u8
 // 应该可以直接从chromedp拿到m3u8地址，但是没跑通，可以先拿到请求所需的所有上下文，然后http.Post拿数据
-func myVideoSource(sid, vid string) model.Video {
+func (x MYMovie) myVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
 
 	//获取基础信息
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".stui-content__thumb", func(element *colly.HTMLElement) {
 		video.Name = element.ChildAttr(".v-thumb", "title")
@@ -208,12 +208,12 @@ func myVideoSource(sid, vid string) model.Video {
 	}
 
 	video.Type = "hls"
-	video.Url = handleMYVideoUrl(sid)
+	video.Url = x.handleMYVideoUrl(sid)
 
 	return video
 }
 
-func myHandlePlayUrlId(url string) (id string) {
+func (x MYMovie) myHandlePlayUrlId(url string) (id string) {
 	tmpList := strings.Split(strings.Trim(strings.Trim(url, ".html"), "/"), "/")
 	if len(tmpList) == 2 {
 		return tmpList[1]
@@ -221,9 +221,9 @@ func myHandlePlayUrlId(url string) (id string) {
 	return
 }
 
-func handleMYVideoUrl(id string) (tmpUrl string) {
-	tmpSid := myFetchPlayInfo(id)
-	tmpUrl = myCloudParse(tmpSid)
+func (x MYMovie) handleMYVideoUrl(id string) (tmpUrl string) {
+	tmpSid := x.myFetchPlayInfo(id)
+	tmpUrl = x.myCloudParse(tmpSid)
 	return tmpUrl
 }
 
@@ -236,8 +236,8 @@ func handleMYVideoUrl(id string) (tmpUrl string) {
 //=>
 //https://new.qqaku.com/20220817/YHUGLoN8/index.m3u8
 
-func myFetchPlayInfo(id string) (tmpSid string) {
-	c := colly.NewCollector()
+func (x MYMovie) myFetchPlayInfo(id string) (tmpSid string) {
+	c := x.Movie.NewColly()
 
 	c.OnResponse(func(response *colly.Response) {
 		// "url":"mayi_f89adGIRDSJxhFCwJcrVTunxt3eQ%2B8xZgSn8fb0QQSKVbR5zTdl0fF890A8oZpC9IYqnL5ScIxuA%2BWldL3%2Fc2Uwy48E","url_next":"mayi_ac5aTQEQLN%2BKpYBZiGiLgOqVh2cE83GT1hLc8M8","from":"iqiyi"
@@ -260,8 +260,8 @@ func myFetchPlayInfo(id string) (tmpSid string) {
 	return
 }
 
-func myCloudParse(id string) (tmpUrl string) {
-	c := colly.NewCollector()
+func (x MYMovie) myCloudParse(id string) (tmpUrl string) {
+	c := x.Movie.NewColly()
 
 	c.OnResponse(func(response *colly.Response) {
 		regex := regexp.MustCompile(`var video_url = '(\S+)';`)
@@ -293,10 +293,10 @@ func myCloudParse(id string) (tmpUrl string) {
 	return
 }
 
-func myCheckVideoUrlRedirect(tmpUrl string) {
+func (x MYMovie) myCheckVideoUrlRedirect(tmpUrl string) {
 	// https://new.qqaku.com/20220727/kBNdvBbi/index.m3u8
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnResponse(func(response *colly.Response) {
 

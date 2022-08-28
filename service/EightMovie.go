@@ -10,22 +10,22 @@ var (
 	eightSearchUrl = "https://www.88hd.com/vod-search-pg-2-wd-天.html"
 )
 
-type EightMovie struct{}
+type EightMovie struct{ Movie }
 
 func (x EightMovie) ListByTag(tagName, page string) model.Pager {
-	return nnListBySearch("天", page)
+	return model.Pager{}
 }
 
 func (x EightMovie) Search(search, page string) model.Pager {
-	return nnListBySearch(search, page)
+	return model.Pager{}
 }
 
 func (x EightMovie) Detail(id string) model.MovieInfo {
-	return nnVideoDetail(id)
+	return model.MovieInfo{}
 }
 
 func (x EightMovie) Source(sid, vid string) model.Video {
-	return nnVideoSource(sid, vid)
+	return model.Video{}
 }
 
 //

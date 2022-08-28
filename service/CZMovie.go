@@ -24,35 +24,35 @@ var (
 //==============================接口实现===================================
 //========================================================================
 
-type CZMovie struct{}
+type CZMovie struct{ Movie }
 
 func (x CZMovie) ListByTag(tagName, page string) model.Pager {
-	return czListByTag(tagName, page)
+	return x.czListByTag(tagName, page)
 }
 
 func (x CZMovie) Search(search, page string) model.Pager {
-	return czListBySearch(search, page)
+	return x.czListBySearch(search, page)
 }
 
 func (x CZMovie) Detail(id string) model.MovieInfo {
-	return czVideoDetail(id)
+	return x.czVideoDetail(id)
 }
 
 func (x CZMovie) Source(sid, vid string) model.Video {
-	return czVideoSource(sid, vid)
+	return x.czVideoSource(sid, vid)
 }
 
 //========================================================================
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-func czListByTag(tagName, page string) model.Pager {
+func (x CZMovie) czListByTag(tagName, page string) model.Pager {
 	_page, _ := strconv.Atoi(page)
 
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".mi_cont .mi_ne_kd ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
@@ -101,11 +101,11 @@ func czListByTag(tagName, page string) model.Pager {
 	return pager
 }
 
-func czListBySearch(query, page string) model.Pager {
+func (x CZMovie) czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
@@ -148,10 +148,10 @@ func czListBySearch(query, page string) model.Pager {
 	return pager
 }
 
-func czVideoDetail(id string) model.MovieInfo {
+func (x CZMovie) czVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {
@@ -184,11 +184,11 @@ func czVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-func czVideoSource(sid, vid string) model.Video {
+func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{}
 	var err error
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
@@ -204,7 +204,7 @@ func czVideoSource(sid, vid string) model.Video {
 			}
 		}
 		if findLine != "" {
-			video, err = czParseVideoSource(sid, findLine)
+			video, err = x.czParseVideoSource(sid, findLine)
 
 			bs, _ := json.MarshalIndent(video, "", "\t")
 			log.Println(fmt.Sprintf("[video] %s", string(bs)))
@@ -227,7 +227,7 @@ func czVideoSource(sid, vid string) model.Video {
 	return video
 }
 
-func czParseVideoSource(id, js string) (model.Video, error) {
+func (x CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	var video = model.Video{}
 	tmpList := strings.Split(strings.TrimSpace(js), ";")
 
@@ -298,7 +298,7 @@ func czParseVideoSource(id, js string) (model.Video, error) {
 		}
 	}
 
-	video.Url = HandleSrcM3U8FileToLocal(id, video.Source)
+	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.Movie.IsCache)
 
 	return video, nil
 }

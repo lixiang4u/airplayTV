@@ -21,33 +21,33 @@ var (
 	nnSearchUrl = "https://www.nunuyy2.org/so/%s-%s-%d-.html"
 )
 
-type NNMovie struct{}
+type NNMovie struct{ Movie }
 
 func (x NNMovie) ListByTag(tagName, page string) model.Pager {
-	return nnListBySearch("天", page)
+	return x.nnListBySearch("天", page)
 }
 
 func (x NNMovie) Search(search, page string) model.Pager {
-	return nnListBySearch(search, page)
+	return x.nnListBySearch(search, page)
 }
 
 func (x NNMovie) Detail(id string) model.MovieInfo {
-	return nnVideoDetail(id)
+	return x.nnVideoDetail(id)
 }
 
 func (x NNMovie) Source(sid, vid string) model.Video {
-	return nnVideoSource(sid, vid)
+	return x.nnVideoSource(sid, vid)
 }
 
 //========================================================================
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-func nnListBySearch(search, page string) model.Pager {
+func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 24 // 每页24条
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".lists-content li", func(element *colly.HTMLElement) {
 		name := element.ChildText("h2 a")
@@ -103,7 +103,7 @@ func nnListBySearch(search, page string) model.Pager {
 }
 
 // 根据id获取视频播放列表信息
-func nnVideoDetail(id string) model.MovieInfo {
+func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
 	// dianying-71677 | zongyi-71677
@@ -115,7 +115,7 @@ func nnVideoDetail(id string) model.MovieInfo {
 
 	info.Id = id
 
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
 		info.Thumb = element.ChildAttr(".thumb", "src")
@@ -142,13 +142,13 @@ func nnVideoDetail(id string) model.MovieInfo {
 
 // 使用chromedp直接请求页面关联的播放数据m3u8
 // 应该可以直接从chromedp拿到m3u8地址，但是没跑通，可以先拿到请求所需的所有上下文，然后http.Post拿数据
-func nnVideoSource(sid, vid string) model.Video {
+func (x NNMovie) nnVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
 
 	vid = strings.ReplaceAll(vid, "-", "/")
 
 	//获取基础信息
-	c := colly.NewCollector()
+	c := x.Movie.NewColly()
 
 	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
 		video.Name = element.ChildText(".product-title")
@@ -177,7 +177,7 @@ func nnVideoSource(sid, vid string) model.Video {
 	_ = handleNNVideoUrl(v.Encode(), &video.Source)
 	video.Type = "hls" // m3u8 都是hls ???
 
-	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source)
+	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 
 	return video
 }
