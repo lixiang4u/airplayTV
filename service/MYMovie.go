@@ -272,10 +272,12 @@ func (x MYMovie) myCloudParse(id string) (tmpUrl string) {
 		}
 		// 是不http协议数据
 		if !strings.HasPrefix(matches[1], "http") {
+			tmpUrl = matches[1]
 			return
 		}
 		// 返回的iqiyi错误地址可能就是html结尾的
 		if strings.HasSuffix(matches[1], ".html") {
+			tmpUrl = matches[1]
 			return
 		}
 		tmpUrl = matches[1]
