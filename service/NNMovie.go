@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
-	"github.com/lixiang4u/ShotTv-api/model"
+	"github.com/lixiang4u/airplayTV/model"
 	"io/ioutil"
 	"log"
 	"net/http"

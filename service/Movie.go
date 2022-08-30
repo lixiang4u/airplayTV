@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/gocolly/colly"
-	"github.com/lixiang4u/ShotTv-api/util"
+	"github.com/lixiang4u/airplayTV/util"
 )
 
 type Movie struct {

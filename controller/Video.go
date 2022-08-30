@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/lixiang4u/ShotTv-api/service"
+	"github.com/lixiang4u/airplayTV/service"
 	go_websocket "github.com/lixiang4u/go-websocket"
 	"log"
 	"net/http"

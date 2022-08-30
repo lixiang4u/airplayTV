@@ -5,8 +5,8 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"github.com/lixiang4u/ShotTv-api/controller"
-	"github.com/lixiang4u/ShotTv-api/util"
+	"github.com/lixiang4u/airplayTV/controller"
+	"github.com/lixiang4u/airplayTV/util"
 	go_websocket "github.com/lixiang4u/go-websocket"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -64,29 +64,19 @@ func NewRouter() *gin.Engine {
 	r := gin.Default()
 
 	// 使用session中间件
-	r.Use(sessions.Sessions("shot_tv", cookie.NewStore([]byte(viper.GetString("app.secret")))))
+	r.Use(sessions.Sessions("airplayTV", cookie.NewStore([]byte(viper.GetString("app.secret")))))
 
 	ws := NewRouterW()
 
 	log.Println("[p]", fmt.Sprintf("%s/app/view/**/*", util.AppPath()))
 	r.LoadHTMLGlob(fmt.Sprintf("%s/app/view/**/*", util.AppPath()))
-	//r.LoadHTMLGlob("D:\\repo\\ShotTv-api\\app\\view\\**\\*")
 
 	r.Static("/html", "./app/public/")
 	r.Static("/upload", "./app/upload/")
 	r.Static("/static", "./app/static/")
 	r.Static("/m3u8", "./app/m3u8/")
 
-	r.GET("/", new(controller.HomeController).Index)      // 默认首页
-	r.GET("/hello", new(controller.HomeController).Hello) // 测试页
-	r.POST("/api/play", new(controller.HomeController).Play)
-	r.POST("/api/play/info", new(controller.HomeController).VideoPlayInfo)
-
-	r.GET("/api/search", new(controller.ResourceController).Search)
-	r.GET("/api/tag", new(controller.ResourceController).ListByTag)
-	r.GET("/api/tag/:tagName", new(controller.ResourceController).ListByTag)
-	r.GET("/api/info/:id", new(controller.ResourceController).Info)
-	r.GET("/api/video/:id", new(controller.ResourceController).VideoSource)
+	r.GET("/", new(controller.HomeController).Index) // 默认首页
 
 	// 统一api
 	r.GET("/api/env/predict", new(controller.HomeController).EnvPredict)
@@ -102,11 +92,7 @@ func NewRouter() *gin.Engine {
 		ws.Run(context.Writer, context.Request, nil)
 	})
 
-	r.GET("/tesla/index", new(controller.HomeController).TeslaIndex)
 	r.GET("/tesla/fullscreen", new(controller.HomeController).FullScreen)
-
-	r.GET("/home", new(controller.ResourceController).Home2)
-	r.GET("/info/:id", new(controller.ResourceController).Info)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)

@@ -7,6 +7,6 @@
     port = 3306
     user = "root"
     password = ""
-    db = "shot_tv"
+    db = "airplayTV"
     charset = "utf8mb4"
     prefix = ""
