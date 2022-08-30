@@ -1,4 +1,4 @@
-module github.com/lixiang4u/ShotTv-api
+module github.com/lixiang4u/airplayTV
 
 go 1.17
 
