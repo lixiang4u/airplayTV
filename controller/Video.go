@@ -15,7 +15,6 @@ import (
 
 type VideoController struct {
 	instant service.IVideoApi
-	_source string
 }
 
 // 解析缓存变量
@@ -66,8 +65,6 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 		x.instant = service.CZMovie{Movie: m}
 		//ctx.JSON(http.StatusOK, gin.H{"msg": "source not exists"})
 	}
-
-	x._source = source
 
 	return x.instant
 }
@@ -138,11 +135,12 @@ func (x VideoController) Airplay(ctx *gin.Context) {
 	var id = ctx.Query("id")              // 播放id
 	var vid = ctx.Query("vid")            // 视频id
 	var clientId = ctx.Query("client_id") // 客户端id
+	var source = ctx.Query("_source")     // 投射需要该参数
 
 	var d = gin.H{
 		"event":     "play",
 		"client_id": clientId,
-		"_source":   x._source,
+		"_source":   source,
 		"video":     x.getInstance(ctx).Source(id, vid),
 		"timestamp": time.Now().Unix(),
 	}
