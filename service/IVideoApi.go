@@ -28,7 +28,11 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 
 	// hd.njeere.com 视频文件加密了，不能直接下载m3u8文件到本地服务器
 	// https://s1.czspp.com:7721 视频可以直接播放
-	if err == nil && util.StringInList(tmpUrl.Hostname(), []string{"hd.njeere.com", "s1.czspp.com"}) {
+	if err == nil && util.StringInList(tmpUrl.Hostname(), []string{
+		"hd.njeere.com",
+		"s1.czspp.com",
+		"yun.m3.c-zzy.online", // 这个需要特殊处理，返回的是m3u8数据，但是后缀是mp4
+	}) {
 		return sourceUrl
 	}
 
