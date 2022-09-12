@@ -8,6 +8,7 @@ import (
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"log"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -224,6 +225,9 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 		log.Println("[ERR]", err.Error())
 	}
 
+	// 视频类型问题处理
+	video = handleVideoType(video)
+
 	return video
 }
 
@@ -301,4 +305,17 @@ func (x CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.Movie.IsCache)
 
 	return video, nil
+}
+
+func handleVideoType(v model.Video) model.Video {
+	// "https://yun.m3.c-zzy.online:1011/d/%E9%98%BF%E9%87%8C1%E5%8F%B7/%E8%8B%8F%E9%87%8C%E5%8D%97/Narco-Saints.S01E01.mp4?type=m3u8"
+
+	tmpUrl, err := url.Parse(v.Source)
+	if err != nil {
+		return v
+	}
+	if util.StringInList(tmpUrl.Host, []string{"yun.m3.c-zzy.online:1011"}) {
+		v.Type = "hls"
+	}
+	return v
 }
