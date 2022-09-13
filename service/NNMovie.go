@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,12 +20,13 @@ var (
 	nnM3u8Url   = "https://www.nunuyy2.org/url.php"
 	nnPlayUrl   = "https://www.nunuyy2.org/%s.html"
 	nnSearchUrl = "https://www.nunuyy2.org/so/%s-%s-%d-.html"
+	nnTagUrl    = "https://www.nunuyy2.org/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 )
 
 type NNMovie struct{ Movie }
 
 func (x NNMovie) ListByTag(tagName, page string) model.Pager {
-	return x.nnListBySearch("天", page)
+	return x.nnListByTag("dianying", page)
 }
 
 func (x NNMovie) Search(search, page string) model.Pager {
@@ -95,6 +97,57 @@ func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 	})
 
 	err := c.Visit(fmt.Sprintf(nnSearchUrl, search, search, handleNNPageNumber(page)))
+	if err != nil {
+		log.Println("[visit.error]", err.Error())
+	}
+
+	return pager
+}
+
+func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
+	var pager = model.Pager{}
+	pager.Limit = 24 // 每页24条
+
+	c := x.Movie.NewColly()
+
+	c.OnHTML(".lists-content ul li", func(element *colly.HTMLElement) {
+		name := element.ChildText("h2 a")
+		tmpUrl := element.ChildAttr("a.thumbnail", "href")
+		thumb := element.ChildAttr("img.thumb", "src")
+		tag := element.ChildText(".note")
+
+		pager.List = append(pager.List, model.MovieInfo{
+			Id:    nnHandleUrlToId(tmpUrl),
+			Name:  name,
+			Thumb: thumb,
+			Url:   tmpUrl,
+			Tag:   tag,
+		})
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		log.Println("Visiting", request.URL.String())
+	})
+
+	regEx := regexp.MustCompile(`index_(\d+).html`)
+
+	c.OnHTML(".pagination", func(element *colly.HTMLElement) {
+		currentPageText := element.ChildText(".active span")
+		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
+			tmpList := regEx.FindStringSubmatch(element.Attr("href"))
+			if len(tmpList) != 2 {
+				return
+			}
+			n, _ := strconv.Atoi(tmpList[1])
+			if n > pager.Total {
+				pager.Total = n
+			}
+		})
+
+		pager.Current, _ = strconv.Atoi(currentPageText)
+	})
+
+	err := c.Visit(strings.ReplaceAll(fmt.Sprintf(nnTagUrl, tagName, handleNNPageNumber(page)), "index_0.html", ""))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
