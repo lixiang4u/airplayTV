@@ -154,3 +154,24 @@ func (x VideoController) Airplay(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
 }
+
+func (x VideoController) VideoControls(ctx *gin.Context) {
+	var clientId = ctx.Query("client_id") // 客户端id
+	var control = ctx.Query("control")    // 投射需要该参数
+
+	var d = gin.H{
+		"event":     "video_controls",
+		"client_id": clientId,
+		"control":   control,
+		"timestamp": time.Now().Unix(),
+	}
+	b, _ := json.MarshalIndent(d, "", "\t")
+
+	log.Println("[debug]", clientId, string(b))
+
+	if go_websocket.WSendMessage(clientId, websocket.TextMessage, b) == false {
+		ctx.JSON(http.StatusOK, gin.H{"code": 500, "msg": "发送失败或TV不在线", "data": nil})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
+}

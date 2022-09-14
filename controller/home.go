@@ -36,7 +36,7 @@ func (p HomeController) Index(ctx *gin.Context) {
 `))
 }
 
-//演示websocket
+// 演示websocket
 func (p HomeController) ListW(clientId string, ws *websocket.Conn, messageType int, data map[string]interface{}) bool {
 	var d = gin.H{"event": data["event"], "data": go_websocket.WSConnectionList()}
 	b, _ := json.MarshalIndent(d, "", "	")
