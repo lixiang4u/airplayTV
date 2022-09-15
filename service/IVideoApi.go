@@ -60,7 +60,7 @@ func downloadSourceFile(id, url, local string, isCache bool) (err error) {
 	c.OnResponse(func(response *colly.Response) {
 		var f *os.File
 		if response.StatusCode == http.StatusOK {
-			bs := util.HandleM3U8Contents(response.Body, util.HandleHost(url))
+			bs := util.HandleM3U8Contents(response.Body, url)
 			f, err = os.OpenFile(local, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
 			_, err = f.Write(bs)
 		} else {

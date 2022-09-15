@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"github.com/grafov/m3u8"
 	"log"
+	"net/url"
+	"path"
 	"strings"
 )
 
 // 处理m3u8内容（修正地址问题）
-func HandleM3U8Contents(data []byte, host string) []byte {
+func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
+	host := HandleHost(sourceUrl)
 	if host == "" {
 		return data
 	}
@@ -41,8 +44,14 @@ func HandleM3U8Contents(data []byte, host string) []byte {
 				continue
 			}
 			if IsHttpUrl(val.URI) == false {
-				masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+				if strings.HasPrefix(val.URI, "/") {
+					masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+				} else {
+					tmpUrl2, _ := url.Parse(sourceUrl)
+					masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s/%s", HandleHost(sourceUrl), path.Dir(tmpUrl2.Path), val.URI)
+				}
 			}
+			// log.Println("======> host... ", masterpl.Variants[idx].URI)
 		}
 	}
 
