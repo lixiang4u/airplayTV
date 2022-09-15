@@ -10,8 +10,9 @@ type apiConfig struct {
 }
 
 var (
-	ApiConfig  apiConfig
-	CORSConfig []string
+	ApiConfig      apiConfig
+	CORSConfig     []string
+	RedirectConfig []string
 )
 
 func LoadConfig() {
@@ -23,4 +24,5 @@ func LoadConfig() {
 
 	ApiConfig.Server = HandleHost(viper.GetString("api.server"))
 	CORSConfig = viper.GetStringSlice("domains.cors")
+	RedirectConfig = viper.GetStringSlice("domains.redirect")
 }

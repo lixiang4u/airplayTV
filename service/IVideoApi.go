@@ -23,7 +23,12 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 	tmpUrl, err := url.Parse(sourceUrl)
 
 	// hd.njeere.com 视频文件加密了，不能直接下载m3u8文件到本地服务器
-	// https://s1.czspp.com:7721 视频可以直接播放
+
+	// 如果是存在CORS切文件直接redirect后能播放的，使用如下处理
+	if util.StringInList(util.HandleHost(sourceUrl), util.RedirectConfig) {
+		return util.HandleUrlToCORS(sourceUrl)
+	}
+
 	if err == nil && util.StringInList(tmpUrl.Hostname(), []string{
 		"hd.njeere.com",
 		"s1.czspp.com",

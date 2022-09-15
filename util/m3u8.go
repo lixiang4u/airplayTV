@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/grafov/m3u8"
 	"log"
-	"net/url"
 	"strings"
 )
 
@@ -31,11 +30,7 @@ func HandleM3U8Contents(data []byte, host string) []byte {
 				mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
 			}
 			if StringInList(HandleHost(mediapl.Segments[idx].URI), CORSConfig) {
-				mediapl.Segments[idx].URI = fmt.Sprintf(
-					"%s/api/video/cors?src=%s",
-					strings.TrimRight(ApiConfig.Server, "/"),
-					url.QueryEscape(mediapl.Segments[idx].URI),
-				)
+				mediapl.Segments[idx].URI = HandleUrlToCORS(mediapl.Segments[idx].URI)
 			}
 			// log.Println("[fix]", mediapl.Segments[idx].URI)
 		}

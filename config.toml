@@ -21,3 +21,8 @@
         "https://api.czspp.com:81",
         "https://abc.xyz"
     ]
+    # 直接获取重定向即可播放的视频
+    redirect = [
+        "https://s1.czspp.com:7721",
+        "https://abc.xyz"
+    ]

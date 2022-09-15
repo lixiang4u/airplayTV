@@ -41,3 +41,12 @@ func HandleRedirectUrl(requestUrl string) (redirectUrl string) {
 
 	return redirectUrl
 }
+
+// 把url转为请求 /api/video/cors 接口的形式，方便后续获取重定向内容
+func HandleUrlToCORS(tmpUrl string) string {
+	return fmt.Sprintf(
+		"%s/api/video/cors?src=%s",
+		strings.TrimRight(ApiConfig.Server, "/"),
+		url.QueryEscape(tmpUrl),
+	)
+}
