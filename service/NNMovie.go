@@ -350,5 +350,5 @@ func handleNNImageUrl(tmpUrl string) string {
 	if util.IsHttpUrl(tmpUrl) == true {
 		return tmpUrl
 	}
-	return fmt.Sprintf("%s/%s", util.HandleHost(nnTagUrl), strings.TrimLeft(tmpUrl, "/"))
+	return fmt.Sprintf("%s/%s", util.HandleHost(nnM3u8Url), strings.TrimLeft(tmpUrl, "/"))
 }
