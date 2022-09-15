@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	nnM3u8Url   = "https://www.nunuyy2.org/url.php"
-	nnPlayUrl   = "https://www.nunuyy2.org/%s.html"
-	nnSearchUrl = "https://www.nunuyy2.org/so/%s-%s-%d-.html"
-	nnTagUrl    = "https://www.nunuyy2.org/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
+	nnM3u8Url   = "https://www.nunuyy3.org/url.php"
+	nnPlayUrl   = "https://www.nunuyy3.org/%s.html"
+	nnSearchUrl = "https://www.nunuyy3.org/so/%s-%s-%d-.html"
+	nnTagUrl    = "https://www.nunuyy3.org/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 )
 
 type NNMovie struct{ Movie }
