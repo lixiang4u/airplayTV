@@ -6,6 +6,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
+	"github.com/lixiang4u/airplayTV/util"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -171,7 +172,7 @@ func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 	c := x.Movie.NewColly()
 
 	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
-		info.Thumb = element.ChildAttr(".thumb", "src")
+		info.Thumb = handleNNImageUrl(element.ChildAttr(".thumb", "src"))
 		info.Name = element.ChildText(".product-title")
 		info.Intro = element.ChildText(".product-excerpt span")
 	})
@@ -343,4 +344,11 @@ func nnHandleUrlToId(tmpUrl string) string {
 	tmpUrl = strings.TrimRight(tmpUrl, ".html")
 	tmpUrl = strings.ReplaceAll(tmpUrl, "/", "-")
 	return strings.TrimLeft(tmpUrl, "-")
+}
+
+func handleNNImageUrl(tmpUrl string) string {
+	if util.IsHttpUrl(tmpUrl) == true {
+		return tmpUrl
+	}
+	return fmt.Sprintf("%s/%s", util.HandleHost(nnTagUrl), strings.TrimLeft(tmpUrl, "/"))
 }
