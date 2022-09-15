@@ -47,8 +47,17 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 				if strings.HasPrefix(val.URI, "/") {
 					masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
 				} else {
-					tmpUrl2, _ := url.Parse(sourceUrl)
-					masterpl.Variants[idx].URI = fmt.Sprintf("%s/%s/%s", HandleHost(sourceUrl), path.Dir(tmpUrl2.Path), val.URI)
+					tmpUrl2, err := url.Parse(sourceUrl)
+					if err == nil {
+						masterpl.Variants[idx].URI = fmt.Sprintf(
+							"%s/%s/%s",
+							HandleHost(sourceUrl),
+							strings.TrimLeft(path.Dir(tmpUrl2.Path), "/"),
+							val.URI,
+						)
+					} else {
+						log.Println("[m3u8::url.Parse]", err)
+					}
 				}
 			}
 			// log.Println("======> host... ", masterpl.Variants[idx].URI)
