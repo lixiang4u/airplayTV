@@ -7,7 +7,9 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -216,6 +218,16 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 		}
 	})
 
+	// 解析另一种iframe嵌套的视频
+	c.OnHTML(".videoplay .viframe", func(element *colly.HTMLElement) {
+		iframeUrl := element.Attr("src")
+		log.Println("======[iframeUrl] ", iframeUrl)
+
+		video.Source, video.Type = getFrameUrlContents(iframeUrl)
+		video.Url = video.Source
+		video.Id = sid
+	})
+
 	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
 		video.Name = element.ChildText("h3")
 	})
@@ -318,4 +330,35 @@ func handleVideoType(v model.Video) model.Video {
 		v.Type = "hls"
 	}
 	return v
+}
+
+func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
+	sourceUrl = frameUrl
+	videoType = "auto"
+
+	resp, err := http.Get(frameUrl)
+	if err != nil {
+		log.Println("[getFrameUrlContents.get.error]", err.Error())
+		return
+	}
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("[getFrameUrlContents.body.error]", err.Error())
+		return
+	}
+
+	// 匹配播放文件
+	regEx := regexp.MustCompile(`sources: \[{(\s+)src: '(\S+)',(\s+)type: '(\S+)'`)
+	r := regEx.FindStringSubmatch(string(bs))
+	if len(r) < 4 {
+		return
+	}
+	sourceUrl = r[2]
+
+	switch r[4] {
+	case "application/vnd.apple.mpegurl":
+		videoType = "hls"
+	}
+
+	return
 }
