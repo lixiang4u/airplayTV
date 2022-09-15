@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/lixiang4u/airplayTV/service"
+	"github.com/lixiang4u/airplayTV/util"
 	go_websocket "github.com/lixiang4u/go-websocket"
 	"log"
 	"net/http"
@@ -174,4 +175,12 @@ func (x VideoController) VideoControls(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"code": 200, "msg": "发送成功", "data": nil})
+}
+
+func (x VideoController) VideoVideoCORS(ctx *gin.Context) {
+	var src = ctx.Query("src")
+	var redirect = util.HandleRedirectUrl(src)
+	log.Println("====>src: ", src)
+	log.Println("====>redirect: ", redirect)
+	ctx.Redirect(http.StatusTemporaryRedirect, redirect)
 }

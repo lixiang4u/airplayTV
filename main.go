@@ -8,11 +8,7 @@ import (
 )
 
 func init() {
-	viper.SetConfigFile("config.toml")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	util.LoadConfig()
 }
 
 func main() {

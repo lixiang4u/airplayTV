@@ -2,6 +2,10 @@
     addr=":8089"
     secret="050dbe0a78e6beb8ae598ec6b1582555"
 
+[api]
+    # 部署服务器的域名（用于跨域站点篡改）
+    server="https://air.artools.cc"
+
 [mysql]
     host = "localhost"
     port = 3306
@@ -10,3 +14,10 @@
     db = "airplayTV"
     charset = "utf8mb4"
     prefix = ""
+
+[domains]
+    # 跨域的m3u8文件以及内容（带协议和断口）
+    cors = [
+        "https://api.czspp.com:81",
+        "https://abc.xyz"
+    ]

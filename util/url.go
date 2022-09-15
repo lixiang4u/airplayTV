@@ -2,6 +2,8 @@ package util
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -21,4 +23,21 @@ func HandleHost(tmpUrl string) (host string) {
 // 是否是http协议的路径
 func IsHttpUrl(tmpUrl string) bool {
 	return strings.HasPrefix(tmpUrl, "http://") || strings.HasPrefix(tmpUrl, "https://")
+}
+
+// 获取重定向内容
+func HandleRedirectUrl(requestUrl string) (redirectUrl string) {
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			redirectUrl = req.URL.String()
+			return nil
+		},
+	}
+	_, err := httpClient.Head(requestUrl)
+	if err != nil {
+		log.Println("[http.Client.Do.Error]", err)
+		return requestUrl
+	}
+
+	return redirectUrl
 }

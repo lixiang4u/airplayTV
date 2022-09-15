@@ -89,7 +89,7 @@ func NewRouter() *gin.Engine {
 	r.GET("/api/video/source", new(controller.VideoController).SourceV2)        // 支持非路径参数
 	r.GET("/api/video/airplay", new(controller.VideoController).Airplay)        // 支持非路径参数
 	r.GET("/api/video/controls", new(controller.VideoController).VideoControls) // 远程遥控功能
-	r.GET("/api/video/cors", new(controller.VideoController).VideoControls)     // 处理CORS问题 https://api.czspp.com:81/m3/27f4dc5a9b1663195094/ixDR95MU2KkzEZzolGWs0v7FumR9yxWHUhLe7Ea_EgNhL5vaIvS_8BgDvCme9Cl-159akCDxdEgpXAmWMjAO-XIHyn86mudjDSYTmRmApys.m3u8
+	r.GET("/api/video/cors", new(controller.VideoController).VideoVideoCORS)    // 处理CORS问题 https://api.czspp.com:81/m3/27f4dc5a9b1663195094/ixDR95MU2KkzEZzolGWs0v7FumR9yxWHUhLe7Ea_EgNhL5vaIvS_8BgDvCme9Cl-159akCDxdEgpXAmWMjAO-XIHyn86mudjDSYTmRmApys.m3u8
 	r.GET("/api/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})

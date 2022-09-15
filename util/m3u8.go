@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/grafov/m3u8"
 	"log"
+	"net/url"
 	"strings"
 )
 
-// HandleM3U8Contents 处理m3u8内容（修正地址问题）
+// 处理m3u8内容（修正地址问题）
 func HandleM3U8Contents(data []byte, host string) []byte {
 	if host == "" {
 		return data
@@ -29,6 +30,14 @@ func HandleM3U8Contents(data []byte, host string) []byte {
 			if IsHttpUrl(val.URI) == false {
 				mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
 			}
+			if StringInList(HandleHost(mediapl.Segments[idx].URI), CORSConfig) {
+				mediapl.Segments[idx].URI = fmt.Sprintf(
+					"%s/api/video/cors?src=%s",
+					strings.TrimRight(ApiConfig.Server, "/"),
+					url.QueryEscape(mediapl.Segments[idx].URI),
+				)
+			}
+			// log.Println("[fix]", mediapl.Segments[idx].URI)
 		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
