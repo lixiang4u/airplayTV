@@ -223,9 +223,12 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 		iframeUrl := element.Attr("src")
 		log.Println("======[iframeUrl] ", iframeUrl)
 
-		video.Source, video.Type = getFrameUrlContents(iframeUrl)
-		video.Url = video.Source
 		video.Id = sid
+		video.Source, video.Type = getFrameUrlContents(iframeUrl)
+		video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.Movie.IsCache)
+		// 1、转为本地m3u8
+		// 2、修改m3u8文件内容地址,支持跨域
+
 	})
 
 	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {

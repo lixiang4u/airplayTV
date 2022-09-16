@@ -19,6 +19,7 @@
     # 跨域的m3u8文件以及内容（带协议和断口）
     cors = [
         "https://api.czspp.com:81",
+        "https://s2.czspp.com",
         "https://abc.xyz"
     ]
     # 直接获取重定向即可播放的视频

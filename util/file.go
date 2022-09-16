@@ -45,7 +45,8 @@ func NewLocalVideoFileName(id, rawUrl string) string {
 	path := fmt.Sprintf("%s/app/m3u8/%s", AppPath(), hash[0:2])
 	file := fmt.Sprintf("%s/%s", path, hash)
 	if filepath.Ext(pureUrl) != "" {
-		file = fmt.Sprintf("%s.%s", file, strings.Trim(filepath.Ext(pureUrl), "."))
+		// 厂长资源会出现.css这种m3u8资源文件
+		file = fmt.Sprintf("%s.%s", file, "m3u8")
 	}
 	_ = MkdirAll(path)
 

@@ -47,6 +47,7 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 }
 
 func downloadSourceFile(id, url, local string, isCache bool) (err error) {
+	log.Println("[download.local]", local)
 	if util.PathExist(local) {
 		return
 	}
