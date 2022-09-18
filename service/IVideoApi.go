@@ -55,6 +55,7 @@ func downloadSourceFile(id, url, local string, isCache bool) (err error) {
 	c := Movie{IsCache: isCache}.NewColly()
 
 	c.OnRequest(func(request *colly.Request) {
+		setHttpRequestHeader(request)
 		log.Println("Visiting", request.URL.String())
 	})
 
@@ -75,4 +76,15 @@ func downloadSourceFile(id, url, local string, isCache bool) (err error) {
 	}
 
 	return err
+}
+
+// 支持colly请求的referer设置
+func setHttpRequestHeader(request *colly.Request) {
+	// 支持请求referer
+	tmpReqHost := util.HandleHost(request.URL.String())
+	if v, ok := util.RefererConfig[tmpReqHost]; ok {
+		request.Headers.Set("Referer", v)
+	} else {
+		request.Headers.Set("Referer", tmpReqHost)
+	}
 }

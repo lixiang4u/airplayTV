@@ -13,6 +13,7 @@ var (
 	ApiConfig      apiConfig
 	CORSConfig     []string
 	RedirectConfig []string
+	RefererConfig  map[string]string
 )
 
 func LoadConfig() {
@@ -25,4 +26,5 @@ func LoadConfig() {
 	ApiConfig.Server = HandleHost(viper.GetString("api.server"))
 	CORSConfig = viper.GetStringSlice("domains.cors")
 	RedirectConfig = viper.GetStringSlice("domains.redirect")
+	RefererConfig = viper.GetStringMapString("domains.referer")
 }
