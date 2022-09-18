@@ -40,14 +40,11 @@ func handlePureUrl(rawUrl string) string {
 
 // 根据视频id生成视频本地存储地址
 func NewLocalVideoFileName(id, rawUrl string) string {
-	pureUrl := handlePureUrl(rawUrl)
+	//pureUrl := handlePureUrl(rawUrl)
 	hash := StringMd5(fmt.Sprintf("%s,%s", id, rawUrl))
 	path := fmt.Sprintf("%s/app/m3u8/%s", AppPath(), hash[0:2])
 	file := fmt.Sprintf("%s/%s", path, hash)
-	if filepath.Ext(pureUrl) != "" {
-		// 厂长资源会出现.css这种m3u8资源文件
-		file = fmt.Sprintf("%s.%s", file, "m3u8")
-	}
+	file = fmt.Sprintf("%s.%s", file, "m3u8")
 	_ = MkdirAll(path)
 
 	return file
