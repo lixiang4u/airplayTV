@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
@@ -14,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -188,7 +192,7 @@ func (x CZMovie) czVideoDetail(id string) model.MovieInfo {
 }
 
 func (x CZMovie) czVideoSource(sid, vid string) model.Video {
-	var video = model.Video{}
+	var video = model.Video{Id: sid}
 	var err error
 
 	c := x.Movie.NewColly()
@@ -223,12 +227,17 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 		iframeUrl := element.Attr("src")
 		log.Println("======[iframeUrl] ", iframeUrl)
 
-		video.Id = sid
-		video.Source, video.Type = getFrameUrlContents(iframeUrl)
-		video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.Movie.IsCache)
-		// 1、转为本地m3u8
-		// 2、修改m3u8文件内容地址,支持跨域
-
+		if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
+			//需要chromedp加载后拿播放信息（数据通过js加密了）
+			video.Source = iframeUrl
+			video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
+		} else {
+			// 直接可以拿到播放信息
+			video.Source, video.Type = getFrameUrlContents(iframeUrl)
+			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.Movie.IsCache)
+			// 1、转为本地m3u8
+			// 2、修改m3u8文件内容地址,支持跨域
+		}
 	})
 
 	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
@@ -364,4 +373,49 @@ func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
 	}
 
 	return
+}
+
+func handleIframeEncrypedSourceUrl(iframeUrl string) string {
+	log.Println("[load.encrypted.iframe.video]")
+	var err error
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	var videoUrl string
+	var videoUrlOk bool
+	err = chromedp.Run(
+		ctx,
+		//chromedp.Navigate(iframeUrl),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			_, _, _, err := page.Navigate(iframeUrl).WithReferrer("https://www.czspp.com/").Do(ctx)
+			if err != nil {
+				return err
+			}
+			return nil
+		}),
+		//chromedp.Evaluate(`urls;`, &res),
+		// wait for footer element is visible (ie, page is loaded)
+		// find and click "Example" link
+		//chromedp.Click(`#example-After`, chromedp.NodeVisible),
+		// retrieve the text of the textarea
+		//chromedp.Value(`#div_player source`, &example),
+
+		chromedp.WaitVisible(`#div_player`),
+
+		chromedp.AttributeValue(`#div_player video source`, "src", &videoUrl, &videoUrlOk),
+	)
+	if err != nil && !strings.Contains(err.Error(), "net::ERR_ABORTED") {
+		// Note: Ignoring the net::ERR_ABORTED page error is essential here
+		// since downloads will cause this error to be emitted, although the
+		// download will still succeed.
+		log.Println("[network.error]", err)
+		return ""
+	}
+
+	return videoUrl
 }
