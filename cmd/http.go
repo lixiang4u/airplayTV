@@ -62,9 +62,11 @@ func NewRouterW() go_websocket.WSWrapper {
 // 新建路由表
 func NewRouter() *gin.Engine {
 	r := gin.Default()
+	r.Use(gin.Recovery())
 
 	// 使用session中间件
 	r.Use(sessions.Sessions("airplayTV", cookie.NewStore([]byte(viper.GetString("app.secret")))))
+	r.Use(util.SetGINLoggerFormat())
 
 	ws := NewRouterW()
 
