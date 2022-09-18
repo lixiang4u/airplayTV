@@ -22,7 +22,7 @@ type VideoController struct {
 func handleCache(cacheStr string) bool {
 	cacheStr = strings.ToLower(cacheStr)
 	if cacheStr == "" { // 没设置cache默认为缓存
-		return true
+		return false
 	}
 	// 兼容前段配置值
 	switch cacheStr {
