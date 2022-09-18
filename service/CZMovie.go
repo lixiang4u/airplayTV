@@ -219,7 +219,7 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 	})
 
 	// 解析另一种iframe嵌套的视频
-	c.OnHTML(".videoplay .viframe", func(element *colly.HTMLElement) {
+	c.OnHTML(".videoplay iframe", func(element *colly.HTMLElement) {
 		iframeUrl := element.Attr("src")
 		log.Println("======[iframeUrl] ", iframeUrl)
 
