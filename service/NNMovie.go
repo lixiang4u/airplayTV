@@ -148,7 +148,9 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 		pager.Current, _ = strconv.Atoi(currentPageText)
 	})
 
-	err := c.Visit(strings.ReplaceAll(fmt.Sprintf(nnTagUrl, tagName, handleNNPageNumber(page)), "index_0.html", ""))
+	tmpUrl := fmt.Sprintf(nnTagUrl, tagName, util.HandlePageNumber(page))
+	tmpUrl = strings.ReplaceAll(tmpUrl, "index_1.html", "")
+	err := c.Visit(tmpUrl)
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
