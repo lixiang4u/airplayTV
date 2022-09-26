@@ -1,5 +1,5 @@
 [app]
-    addr=":8089"
+    addr=":8090"
     secret="050dbe0a78e6beb8ae598ec6b1582555"
 
 [api]
