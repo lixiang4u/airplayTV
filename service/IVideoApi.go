@@ -29,6 +29,10 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 		return util.HandleUrlToCORS(sourceUrl)
 	}
 
+	// 直接播放的地址
+	if util.StringInList(util.HandleHost(sourceUrl), util.DirectConfig) {
+		return sourceUrl
+	}
 	if err == nil && util.StringInList(tmpUrl.Hostname(), []string{
 		"hd.njeere.com",
 		"s1.czspp.com",

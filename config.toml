@@ -27,6 +27,11 @@
         "https://s1.czspp.com:7721",
         "https://abc.xyz"
     ]
+    # 直接可播放
+    direct = [
+        "https://huxiu-video-baidu.oss-cn-beijing.aliyuncs.com",
+        "https://abc.xyz"
+    ]
     # 请求需要带referer的数据 "请求地址"="referer地址"
     [domains.referer]
         "https://al.cos20.aliyundrive.asia:81" = "https://www.czspp.com/"
