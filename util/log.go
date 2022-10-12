@@ -12,6 +12,7 @@ func InitLog() {
 	logf, err := rotatelogs.New(
 		"./app/log/%Y-%m-%d.log",
 		rotatelogs.WithLinkName("./app/log/app.log"),
+		rotatelogs.WithMaxAge(-1), //MaxAge (default: 7 days)
 		rotatelogs.WithRotationTime(24*time.Hour),
 	)
 	if err != nil {
