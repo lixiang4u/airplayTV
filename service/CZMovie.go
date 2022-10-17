@@ -11,6 +11,7 @@ import (
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 )
 
 var (
+	czHost      = "https://www.czspp.com"
 	czTagUrl    = "https://www.czspp.com/%s/page/%d"
 	czSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%d"
 	czDetailUrl = "https://www.czspp.com/movie/%s.html"
@@ -97,6 +99,11 @@ func (x CZMovie) czListByTag(tagName, page string) model.Pager {
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
+	c.OnResponse(func(response *colly.Response) {
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
+	})
 
 	log.Println(fmt.Sprintf(czTagUrl, tagName, _page))
 
@@ -146,6 +153,11 @@ func (x CZMovie) czListBySearch(query, page string) model.Pager {
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
+	c.OnResponse(func(response *colly.Response) {
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
+	})
 
 	err := c.Visit(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
 	if err != nil {
@@ -182,6 +194,11 @@ func (x CZMovie) czVideoDetail(id string) model.MovieInfo {
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
+	c.OnResponse(func(response *colly.Response) {
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
+	})
 
 	err := c.Visit(fmt.Sprintf(czDetailUrl, id))
 	if err != nil {
@@ -202,6 +219,10 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 	})
 
 	c.OnResponse(func(response *colly.Response) {
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
+
 		var findLine = ""
 		tmpList := strings.Split(string(response.Body), "\n")
 		for _, line := range tmpList {
@@ -242,6 +263,11 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 
 	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
 		video.Name = element.ChildText("h3")
+	})
+	c.OnResponse(func(response *colly.Response) {
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
 	})
 
 	err = c.Visit(fmt.Sprintf(czPlayUrl, sid))
@@ -418,4 +444,27 @@ func handleIframeEncrypedSourceUrl(iframeUrl string) string {
 	}
 
 	return videoUrl
+}
+
+func isWaf(html string) []byte {
+	regEx := regexp.MustCompile(`window.location.href ="(\S+)";`)
+	f := regEx.FindStringSubmatch(html)
+	if len(f) < 2 {
+		return nil
+	}
+
+	log.Println("[=========>]", fmt.Sprintf("%s%s", util.HandleHost(czHost), f[1]))
+
+	resp, err := http.Get(fmt.Sprintf("%s%s", util.HandleHost(czHost), f[1]))
+	if err != nil {
+		log.Println("[IsWaf.error]", err.Error())
+		return nil
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("[IsWaf.resp.body]", err.Error())
+		return nil
+	}
+	log.Println("[IsWaf.error]", string(b))
+	return b
 }
