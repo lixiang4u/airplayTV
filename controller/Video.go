@@ -162,11 +162,13 @@ func (x VideoController) Airplay(ctx *gin.Context) {
 func (x VideoController) VideoControls(ctx *gin.Context) {
 	var clientId = ctx.Query("client_id") // 客户端id
 	var control = ctx.Query("control")    // 投射需要该参数
+	var value = ctx.Query("value")        // 投射需要该参数值
 
 	var d = gin.H{
 		"event":     "video_controls",
 		"client_id": clientId,
 		"control":   control,
+		"value":     value,
 		"timestamp": time.Now().Unix(),
 	}
 	b, _ := json.MarshalIndent(d, "", "\t")
