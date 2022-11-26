@@ -36,6 +36,7 @@ var (
 type CZMovie struct {
 	movie       Movie
 	httpWrapper *util.HttpWrapper
+	btVerifyUrl string
 }
 
 func (x *CZMovie) Init(movie Movie) {
@@ -500,13 +501,16 @@ func (x *CZMovie) GetVerifyUrl() string {
 }
 
 func (x *CZMovie) SetCookie() error {
-	tmpUrl := x.GetVerifyUrl()
-	if tmpUrl == "" {
+	if x.btVerifyUrl == "" {
+		x.btVerifyUrl = x.GetVerifyUrl()
+	}
+	if x.btVerifyUrl == "" {
 		return errors.New("解析人机认证失败")
 	}
-	h, body, err := x.httpWrapper.GetResponse(tmpUrl)
+	h, body, err := x.httpWrapper.GetResponse(x.btVerifyUrl)
 
 	if err != nil {
+		x.btVerifyUrl = "" // 请求有问题，重置认证URL
 		return err
 	}
 	tmpV := strings.TrimSpace(string(body))
@@ -514,6 +518,8 @@ func (x *CZMovie) SetCookie() error {
 		x.httpWrapper.SetHeader("cookie", v[0])
 		return nil
 	}
+
+	x.btVerifyUrl = "" // 请求返回数据，先重置认证URL吧
 
 	return errors.New("没有发现cookie")
 }
