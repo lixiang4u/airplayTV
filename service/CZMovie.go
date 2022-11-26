@@ -248,18 +248,18 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 
 	// 解析另一种iframe嵌套的视频
 	iframeUrl, _ := doc.Find(".videoplay iframe").Attr("src")
-	log.Println("======[iframeUrl] ", iframeUrl)
-
-	if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
-		//需要chromedp加载后拿播放信息（数据通过js加密了）
-		video.Source = iframeUrl
-		video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
-	} else {
-		// 直接可以拿到播放信息
-		video.Source, video.Type = getFrameUrlContents(iframeUrl)
-		video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
-		// 1、转为本地m3u8
-		// 2、修改m3u8文件内容地址,支持跨域
+	if strings.TrimSpace(iframeUrl) != "" {
+		if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
+			//需要chromedp加载后拿播放信息（数据通过js加密了）
+			video.Source = iframeUrl
+			video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
+		} else {
+			// 直接可以拿到播放信息
+			video.Source, video.Type = getFrameUrlContents(iframeUrl)
+			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+			// 1、转为本地m3u8
+			// 2、修改m3u8文件内容地址,支持跨域
+		}
 	}
 
 	video.Name = doc.Find(".jujiinfo h3").Text()
