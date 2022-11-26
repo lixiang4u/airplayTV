@@ -8,7 +8,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
-	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"io"
@@ -202,6 +201,7 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 		})
 	})
 
+	info.Id = id
 	info.Thumb, _ = doc.Find(".dyxingq .dyimg img").Attr("src")
 	info.Name = doc.Find(".dyxingq .moviedteail_tt h1").Text()
 	info.Intro = strings.TrimSpace(doc.Find(".yp_context").Text())
@@ -211,71 +211,58 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 
 func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
-	var err error
 
-	_ = x.SetCookie()
-	c := x.movie.NewColly()
+	err := x.SetCookie()
+	if err != nil {
+		log.Println("[绕过人机失败]", err.Error())
+		return video
+	}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(czPlayUrl, sid))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return video
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return video
+	}
 
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
+	var findLine = ""
+	tmpList := strings.Split(string(b), "\n")
+	for _, line := range tmpList {
+		if strings.Contains(line, "md5.AES.decrypt") {
+			findLine = line
+			break
 		}
+	}
+	if findLine != "" {
+		video, err = x.czParseVideoSource(sid, findLine)
 
-		var findLine = ""
-		tmpList := strings.Split(string(response.Body), "\n")
-		for _, line := range tmpList {
-			if strings.Contains(line, "md5.AES.decrypt") {
-				findLine = line
-				break
-			}
+		bs, _ := json.MarshalIndent(video, "", "\t")
+		log.Println(fmt.Sprintf("[video] %s", string(bs)))
+		if err != nil {
+			log.Println("[parse.video.error]", err)
 		}
-		if findLine != "" {
-			video, err = x.czParseVideoSource(sid, findLine)
-
-			bs, _ := json.MarshalIndent(video, "", "\t")
-			log.Println(fmt.Sprintf("[video] %s", string(bs)))
-
-			if err != nil {
-				log.Println("[parse.video.error]", err)
-			}
-		}
-	})
+	}
 
 	// 解析另一种iframe嵌套的视频
-	c.OnHTML(".videoplay iframe", func(element *colly.HTMLElement) {
-		iframeUrl := element.Attr("src")
-		log.Println("======[iframeUrl] ", iframeUrl)
+	iframeUrl, _ := doc.Find(".videoplay iframe").Attr("src")
+	log.Println("======[iframeUrl] ", iframeUrl)
 
-		if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
-			//需要chromedp加载后拿播放信息（数据通过js加密了）
-			video.Source = iframeUrl
-			video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
-		} else {
-			// 直接可以拿到播放信息
-			video.Source, video.Type = getFrameUrlContents(iframeUrl)
-			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
-			// 1、转为本地m3u8
-			// 2、修改m3u8文件内容地址,支持跨域
-		}
-	})
-
-	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
-		video.Name = element.ChildText("h3")
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
-		}
-	})
-
-	err = c.Visit(fmt.Sprintf(czPlayUrl, sid))
-	if err != nil {
-		log.Println("[ERR]", err.Error())
+	if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
+		//需要chromedp加载后拿播放信息（数据通过js加密了）
+		video.Source = iframeUrl
+		video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
+	} else {
+		// 直接可以拿到播放信息
+		video.Source, video.Type = getFrameUrlContents(iframeUrl)
+		video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+		// 1、转为本地m3u8
+		// 2、修改m3u8文件内容地址,支持跨域
 	}
+
+	video.Name = doc.Find(".jujiinfo h3").Text()
 
 	// 视频类型问题处理
 	video = handleVideoType(video)
