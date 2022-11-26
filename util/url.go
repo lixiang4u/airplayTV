@@ -20,6 +20,14 @@ func HandleHost(tmpUrl string) (host string) {
 	return fmt.Sprintf("%s://%s", tmpUrl2.Scheme, tmpUrl2.Host)
 }
 
+func HandleHostname(tmpUrl string) (host string) {
+	tmpUrl2, err := url.Parse(tmpUrl)
+	if err != nil {
+		return
+	}
+	return tmpUrl2.Hostname()
+}
+
 // 是否是http协议的路径
 func IsHttpUrl(tmpUrl string) bool {
 	return strings.HasPrefix(tmpUrl, "http://") || strings.HasPrefix(tmpUrl, "https://")
