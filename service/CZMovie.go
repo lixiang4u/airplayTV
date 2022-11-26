@@ -263,7 +263,7 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 		}
 	}
 
-	video.Name = doc.Find(".jujiinfo h3").Text()
+	video.Name = doc.Find(".pclist .jujiinfo h3").Text()
 
 	// 视频类型问题处理
 	video = handleVideoType(video)
