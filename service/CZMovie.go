@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
@@ -33,21 +34,36 @@ var (
 //==============================接口实现===================================
 //========================================================================
 
-type CZMovie struct{ Movie }
+type CZMovie struct {
+	movie       Movie
+	httpWrapper *util.HttpWrapper
+}
 
-func (x CZMovie) ListByTag(tagName, page string) model.Pager {
+func (x *CZMovie) Init(movie Movie) {
+	x.movie = movie
+	if x.httpWrapper == nil {
+		x.httpWrapper = &util.HttpWrapper{}
+	}
+	x.httpWrapper.SetHeader("origin", czHost)
+	x.httpWrapper.SetHeader("authority", util.HandleHostname(czHost))
+	x.httpWrapper.SetHeader("referer", czHost)
+	x.httpWrapper.SetHeader("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
+	x.httpWrapper.SetHeader("cookie", "")
+}
+
+func (x *CZMovie) ListByTag(tagName, page string) model.Pager {
 	return x.czListByTag(tagName, page)
 }
 
-func (x CZMovie) Search(search, page string) model.Pager {
+func (x *CZMovie) Search(search, page string) model.Pager {
 	return x.czListBySearch(search, page)
 }
 
-func (x CZMovie) Detail(id string) model.MovieInfo {
+func (x *CZMovie) Detail(id string) model.MovieInfo {
 	return x.czVideoDetail(id)
 }
 
-func (x CZMovie) Source(sid, vid string) model.Video {
+func (x *CZMovie) Source(sid, vid string) model.Video {
 	return x.czVideoSource(sid, vid)
 }
 
@@ -55,84 +71,79 @@ func (x CZMovie) Source(sid, vid string) model.Video {
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-func (x CZMovie) czListByTag(tagName, page string) model.Pager {
+func (x *CZMovie) czListByTag(tagName, page string) model.Pager {
 	_page, _ := strconv.Atoi(page)
 
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	c := x.Movie.NewColly()
-
-	c.OnHTML(".mi_cont .mi_ne_kd ul li", func(element *colly.HTMLElement) {
-		name := element.ChildText(".dytit a")
-		url := element.ChildAttr(".dytit a", "href")
-		thumb := element.ChildAttr("img.thumb", "data-original")
-		tag := element.ChildText(".nostag")
-		actors := element.ChildText(".inzhuy")
-		resolution := element.ChildText(".hdinfo span")
+	err := x.SetCookie()
+	if err != nil {
+		log.Println("[绕过人机失败]", err.Error())
+		return pager
+	}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(czTagUrl, tagName, _page))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return pager
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return pager
+	}
+	doc.Find(".mi_cont .mi_ne_kd ul li").Each(func(i int, selection *goquery.Selection) {
+		name := selection.Find(".dytit a").Text()
+		tmpUrl, _ := selection.Find(".dytit a").Attr("href")
+		thumb, _ := selection.Find("img.thumb").Attr("data-original")
+		tag := selection.Find(".nostag").Text()
+		actors := selection.Find(".inzhuy").Text()
+		resolution := selection.Find(".hdinfo span").Text()
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:         util.CZHandleUrlToId(url),
+			Id:         util.CZHandleUrlToId(tmpUrl),
 			Name:       name,
 			Thumb:      thumb,
-			Url:        url,
-			Actors:     actors,
+			Url:        tmpUrl,
+			Actors:     strings.TrimSpace(actors),
 			Tag:        tag,
 			Resolution: resolution,
 		})
 	})
 
-	c.OnHTML(".pagenavi_txt", func(element *colly.HTMLElement) {
-		element.ForEach("a", func(i int, element *colly.HTMLElement) {
-			tmpList := strings.Split(element.Attr("href"), "/")
-			n, _ := strconv.Atoi(tmpList[len(tmpList)-1])
-			if n*pager.Limit > pager.Total {
-				pager.Total = n * pager.Limit
-			}
-		})
-	})
-
-	c.OnHTML(".pagenavi_txt .current", func(element *colly.HTMLElement) {
-		pager.Current, _ = strconv.Atoi(element.Text)
-	})
-
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
+	doc.Find(".pagenavi_txt a").Each(func(i int, selection *goquery.Selection) {
+		tmpHref, _ := selection.Attr("href")
+		tmpList := strings.Split(tmpHref, "/")
+		n, _ := strconv.Atoi(tmpList[len(tmpList)-1])
+		if n*pager.Limit > pager.Total {
+			pager.Total = n * pager.Limit
 		}
 	})
 
-	log.Println(fmt.Sprintf(czTagUrl, tagName, _page))
-
-	err := c.Visit(fmt.Sprintf(czTagUrl, tagName, _page))
-	if err != nil {
-		log.Println("[visit.error]", err.Error())
-	}
+	pager.Current, _ = strconv.Atoi(doc.Find(".pagenavi_txt .current").Text())
 
 	return pager
 }
 
-func (x CZMovie) czListBySearch(query, page string) model.Pager {
+func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	c := x.Movie.NewColly()
+	_ = x.SetCookie()
+	c := x.movie.NewColly()
 
 	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText(".dytit a")
-		url := element.ChildAttr(".dytit a", "href")
+		tmpUrl := element.ChildAttr(".dytit a", "href")
 		thumb := element.ChildAttr("img.thumb", "data-original")
 		tag := element.ChildText(".nostag")
 		actors := element.ChildText(".inzhuy")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:     util.CZHandleUrlToId(url),
+			Id:     util.CZHandleUrlToId(tmpUrl),
 			Name:   name,
 			Thumb:  thumb,
-			Url:    url,
+			Url:    tmpUrl,
 			Actors: actors,
 			Tag:    tag,
 		})
@@ -167,10 +178,11 @@ func (x CZMovie) czListBySearch(query, page string) model.Pager {
 	return pager
 }
 
-func (x CZMovie) czVideoDetail(id string) model.MovieInfo {
+func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	c := x.Movie.NewColly()
+	_ = x.SetCookie()
+	c := x.movie.NewColly()
 
 	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {
@@ -208,11 +220,12 @@ func (x CZMovie) czVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-func (x CZMovie) czVideoSource(sid, vid string) model.Video {
+func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 	var err error
 
-	c := x.Movie.NewColly()
+	_ = x.SetCookie()
+	c := x.movie.NewColly()
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
@@ -255,7 +268,7 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 		} else {
 			// 直接可以拿到播放信息
 			video.Source, video.Type = getFrameUrlContents(iframeUrl)
-			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.Movie.IsCache)
+			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
 			// 1、转为本地m3u8
 			// 2、修改m3u8文件内容地址,支持跨域
 		}
@@ -281,7 +294,7 @@ func (x CZMovie) czVideoSource(sid, vid string) model.Video {
 	return video
 }
 
-func (x CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
+func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	var video = model.Video{}
 	tmpList := strings.Split(strings.TrimSpace(js), ";")
 
@@ -352,7 +365,7 @@ func (x CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 		}
 	}
 
-	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.Movie.IsCache)
+	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
 
 	return video, nil
 }
@@ -467,4 +480,20 @@ func isWaf(html string) []byte {
 	}
 	log.Println("[IsWaf.error]", string(b))
 	return b
+}
+
+func (x *CZMovie) SetCookie() error {
+	tmpUrl := "https://www.czspp.com/a20be899_96a6_40b2_88ba_32f1f75f1552_yanzheng_ip.php?type=96c4e20a0e951f471d32dae103e83881&key=21ce3b4f9c0d19a7797e28e44824be3b&value=11098d503592721f9914770753951607"
+	h, body, err := x.httpWrapper.GetResponse(tmpUrl)
+
+	if err != nil {
+		return err
+	}
+	tmpV := strings.TrimSpace(string(body))
+	if v, ok := h["Set-Cookie"]; ok && strings.Contains(strings.TrimSpace(v[0]), tmpV) {
+		x.httpWrapper.SetHeader("cookie", v[0])
+		return nil
+	}
+
+	return errors.New("没有发现cookie")
 }

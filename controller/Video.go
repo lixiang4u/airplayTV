@@ -48,7 +48,9 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 
 	switch source {
 	case "cz":
-		x.instant = service.CZMovie{Movie: m}
+		_m := service.CZMovie{}
+		_m.Init(m)
+		x.instant = &_m
 		break
 	case "nn":
 		x.instant = service.NNMovie{Movie: m}
@@ -66,7 +68,9 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	//	x.instant = service.EightMovie{}
 	//	break
 	default:
-		x.instant = service.CZMovie{Movie: m}
+		_m := service.CZMovie{}
+		_m.Init(m)
+		x.instant = &_m
 		//ctx.JSON(http.StatusOK, gin.H{"msg": "source not exists"})
 	}
 
