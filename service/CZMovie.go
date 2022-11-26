@@ -458,8 +458,52 @@ func isWaf(html string) []byte {
 	return b
 }
 
+func (x *CZMovie) GetVerifyUrl() string {
+	b, err := x.httpWrapper.Get(czHost)
+	if err != nil {
+		log.Println("[访问主站错误]", err.Error())
+		return ""
+	}
+	regEx := regexp.MustCompile(`<script type="text/javascript" src="(\S+)"></script>`)
+	matchResult := regEx.FindStringSubmatch(string(b))
+
+	log.Println("[人机认证]", util.ToJSON(matchResult, false))
+
+	if len(matchResult) < 2 {
+		return ""
+	}
+	b, err = x.httpWrapper.Get(fmt.Sprintf("%s%s", strings.TrimRight(czHost, "/"), matchResult[1]))
+	if err != nil {
+		log.Println("[访问认证JS错误]", err.Error())
+		return ""
+	}
+
+	regEx = regexp.MustCompile(`var key="(\w+)",value="(\w+)";`)
+	matchResult2 := regEx.FindStringSubmatch(string(b))
+	if len(matchResult2) < 3 {
+		log.Println("[匹配认证配置错误] response:", string(b))
+		return ""
+	}
+	log.Println("[解析验证配置]", util.ToJSON(matchResult2, true))
+
+	regEx = regexp.MustCompile(`c.get\(\"(\S+)\&key\=`)
+	matchResult3 := regEx.FindStringSubmatch(string(b))
+	if len(matchResult3) < 2 {
+		log.Println("[匹配认证地址错误] response:", string(b))
+		return ""
+	}
+	log.Println("[解析验证地址]", util.ToJSON(matchResult3, true))
+
+	tmpUrl := fmt.Sprintf("%s%s&key=%s&value=%s", strings.TrimRight(czHost, "/"), matchResult3[1], matchResult2[1], matchResult2[2])
+
+	return tmpUrl
+}
+
 func (x *CZMovie) SetCookie() error {
-	tmpUrl := "https://www.czspp.com/a20be899_96a6_40b2_88ba_32f1f75f1552_yanzheng_ip.php?type=96c4e20a0e951f471d32dae103e83881&key=21ce3b4f9c0d19a7797e28e44824be3b&value=11098d503592721f9914770753951607"
+	tmpUrl := x.GetVerifyUrl()
+	if tmpUrl == "" {
+		return errors.New("解析人机认证失败")
+	}
 	h, body, err := x.httpWrapper.GetResponse(tmpUrl)
 
 	if err != nil {
