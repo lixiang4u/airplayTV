@@ -468,8 +468,6 @@ func (x *CZMovie) GetVerifyUrl() string {
 	regEx := regexp.MustCompile(`<script type="text/javascript" src="(\S+)"></script>`)
 	matchResult := regEx.FindStringSubmatch(string(b))
 
-	log.Println("[人机认证]", util.ToJSON(matchResult, false))
-
 	if len(matchResult) < 2 {
 		return ""
 	}
@@ -495,15 +493,32 @@ func (x *CZMovie) GetVerifyUrl() string {
 	}
 	log.Println("[解析验证地址]", util.ToJSON(matchResult3, true))
 
-	tmpUrl := fmt.Sprintf("%s%s&key=%s&value=%s", strings.TrimRight(czHost, "/"), matchResult3[1], matchResult2[1], matchResult2[2])
+	tmpUrl := fmt.Sprintf(
+		"%s%s&key=%s&value=%s",
+		strings.TrimRight(czHost, "/"),    //域名
+		matchResult3[1],                   // 接口地址
+		matchResult2[1],                   // key
+		x.btVerifyEncode(matchResult2[2]), // value
+	)
 
 	return tmpUrl
+}
+
+func (x *CZMovie) btVerifyEncode(value string) string {
+	var tmpString string
+	for _, v := range value {
+		tmpString += fmt.Sprintf("%v", v)
+	}
+	return util.StringMd5(tmpString)
 }
 
 func (x *CZMovie) SetCookie() error {
 	if x.btVerifyUrl == "" {
 		x.btVerifyUrl = x.GetVerifyUrl()
 	}
+
+	log.Println("[btVerifyUrl]", x.btVerifyUrl)
+
 	if x.btVerifyUrl == "" {
 		return errors.New("解析人机认证失败")
 	}
