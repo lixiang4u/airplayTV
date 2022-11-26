@@ -129,51 +129,46 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	_ = x.SetCookie()
-	c := x.movie.NewColly()
+	err := x.SetCookie()
+	if err != nil {
+		log.Println("[绕过人机失败]", err.Error())
+		return pager
+	}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return pager
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return pager
+	}
 
-	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
-		name := element.ChildText(".dytit a")
-		tmpUrl := element.ChildAttr(".dytit a", "href")
-		thumb := element.ChildAttr("img.thumb", "data-original")
-		tag := element.ChildText(".nostag")
-		actors := element.ChildText(".inzhuy")
+	doc.Find(".search_list ul li").Each(func(i int, selection *goquery.Selection) {
+		name := selection.Find(".dytit a").Text()
+		tmpUrl, _ := selection.Find(".dytit a").Attr("href")
+		thumb, _ := selection.Find("img.thumb").Attr("data-original")
+		tag := selection.Find(".nostag").Text()
+		actors := selection.Find(".inzhuy").Text()
 
 		pager.List = append(pager.List, model.MovieInfo{
 			Id:     util.CZHandleUrlToId(tmpUrl),
 			Name:   name,
 			Thumb:  thumb,
 			Url:    tmpUrl,
-			Actors: actors,
+			Actors: strings.TrimSpace(actors),
 			Tag:    tag,
 		})
 	})
 
-	c.OnHTML(".dytop .dy_tit_big", func(element *colly.HTMLElement) {
-		element.ForEach("span", func(i int, element *colly.HTMLElement) {
-			if i == 0 {
-				pager.Total, _ = strconv.Atoi(element.Text)
-			}
-		})
-	})
-
-	c.OnHTML(".pagenavi_txt .current", func(element *colly.HTMLElement) {
-		pager.Current, _ = strconv.Atoi(element.Text)
-	})
-
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
+	doc.Find(".dytop .dy_tit_big span").Each(func(i int, selection *goquery.Selection) {
+		if i == 0 {
+			pager.Total, _ = strconv.Atoi(selection.Text())
 		}
 	})
 
-	err := c.Visit(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
-	if err != nil {
-		log.Println("[visit.error]", err.Error())
-	}
+	pager.Current, _ = strconv.Atoi(doc.Find(".pagenavi_txt .current").Text())
 
 	return pager
 }
