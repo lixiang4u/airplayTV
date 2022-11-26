@@ -176,41 +176,35 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	_ = x.SetCookie()
-	c := x.movie.NewColly()
+	err := x.SetCookie()
+	if err != nil {
+		log.Println("[绕过人机失败]", err.Error())
+		return info
+	}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(czDetailUrl, id))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return info
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return info
+	}
 
-	c.OnHTML(".paly_list_btn", func(element *colly.HTMLElement) {
-		element.ForEach("a", func(i int, element *colly.HTMLElement) {
-			info.Links = append(info.Links, model.Link{
-				Id:   util.CZHandleUrlToId2(element.Attr("href")),
-				Name: strings.ReplaceAll(element.Text, "厂长", ""),
-				Url:  element.Attr("href"),
-			})
+	doc.Find(".paly_list_btn a").Each(func(i int, selection *goquery.Selection) {
+		tmpHref, _ := selection.Attr("href")
+		info.Links = append(info.Links, model.Link{
+			Id:    util.CZHandleUrlToId2(tmpHref),
+			Name:  strings.ReplaceAll(selection.Text(), "厂长", ""),
+			Url:   tmpHref,
+			Group: "资源1",
 		})
 	})
 
-	c.OnHTML(".dyxingq", func(element *colly.HTMLElement) {
-		info.Thumb = element.ChildAttr(".dyimg img", "src")
-		info.Name = element.ChildText(".moviedteail_tt h1")
-	})
-
-	c.OnHTML(".yp_context", func(element *colly.HTMLElement) {
-		info.Intro = strings.TrimSpace(element.Text)
-	})
-
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
-		}
-	})
-
-	err := c.Visit(fmt.Sprintf(czDetailUrl, id))
-	if err != nil {
-		log.Println("[visit.error]", err.Error())
-	}
+	info.Thumb, _ = doc.Find(".dyxingq .dyimg img").Attr("src")
+	info.Name = doc.Find(".dyxingq .moviedteail_tt h1").Text()
+	info.Intro = strings.TrimSpace(doc.Find(".yp_context").Text())
 
 	return info
 }
