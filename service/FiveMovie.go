@@ -3,7 +3,6 @@ package service
 import "C"
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
@@ -11,7 +10,6 @@ import (
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -230,82 +228,6 @@ func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 func (x FiveMovie) handleVideoType(v model.Video) model.Video {
 	v.Type = "hls"
 	return v
-}
-
-func (x FiveMovie) fiveParseVideoSource(id, js string) (model.Video, error) {
-	var video = model.Video{}
-	tmpList := strings.Split(strings.TrimSpace(js), ";")
-
-	var data = ""
-	var key = ""
-	var iv = ""
-	for index, str := range tmpList {
-		if index == 0 {
-			regex := regexp.MustCompile(`"\S+"`)
-			data = strings.Trim(regex.FindString(str), `"`)
-			continue
-		}
-		if index == 1 {
-			regex := regexp.MustCompile(`"(\S+)"`)
-			matchList := regex.FindStringSubmatch(str)
-			if len(matchList) > 0 {
-				key = matchList[len(matchList)-1]
-			}
-			continue
-		}
-		if index == 2 {
-			regex := regexp.MustCompile(`\((\S+)\)`)
-			matchList := regex.FindStringSubmatch(str)
-			if len(matchList) > 0 {
-				iv = matchList[len(matchList)-1]
-			}
-			continue
-		}
-	}
-
-	log.Println(fmt.Sprintf("[parsing] key: %s, iv: %s", key, iv))
-
-	if key == "" && data == "" {
-		return video, errors.New("解析失败")
-	}
-	bs, err := util.DecryptByAes([]byte(key), []byte(iv), data)
-	if err != nil {
-		return video, errors.New("解密失败")
-	}
-	tmpList = strings.Split(string(bs), "window")
-	if len(tmpList) < 1 {
-		return video, errors.New("解密数据错误")
-	}
-
-	regex := regexp.MustCompile(`{url: "(\S+)",type:"(\S+)",([\S\s]*)pic:'(\S+)'}`)
-	matchList := regex.FindStringSubmatch(tmpList[0])
-
-	if len(matchList) < 1 {
-		return video, errors.New("解析视频信息失败")
-	}
-
-	video.Id = id
-
-	for index, m := range matchList {
-		switch index {
-		case 1:
-			video.Source = m
-			video.Url = m
-			break
-		case 2:
-			video.Type = m
-			break
-		case 4:
-			video.Thumb = m
-			break
-		default:
-			break
-		}
-	}
-
-	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.Movie.IsCache)
-
-	return video, nil
 }
 
 func (x FiveMovie) fiveParseVideoUrl(id string) string {
