@@ -3,7 +3,6 @@ package service
 import "C"
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/chromedp/cdproto/network"
@@ -33,26 +32,26 @@ var (
 type FiveMovie struct{ Movie }
 
 func (x FiveMovie) ListByTag(tagName, page string) model.Pager {
-	return x.czListByTag(tagName, page)
+	return x.fiveListByTag(tagName, page)
 }
 
 func (x FiveMovie) Search(search, page string) model.Pager {
-	return x.czListBySearch(search, page)
+	return x.fiveListBySearch(search, page)
 }
 
 func (x FiveMovie) Detail(id string) model.MovieInfo {
-	return x.czVideoDetail(id)
+	return x.fiveVideoDetail(id)
 }
 
 func (x FiveMovie) Source(sid, vid string) model.Video {
-	return x.czVideoSource(sid, vid)
+	return x.fiveVideoSource(sid, vid)
 }
 
 //========================================================================
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-func (x FiveMovie) czListByTag(tagName, page string) model.Pager {
+func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 	_page, _ := strconv.Atoi(page)
 
 	var pager = model.Pager{}
@@ -112,7 +111,7 @@ func (x FiveMovie) czListByTag(tagName, page string) model.Pager {
 	return pager
 }
 
-func (x FiveMovie) czListBySearch(query, page string) model.Pager {
+func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
@@ -164,7 +163,7 @@ func (x FiveMovie) czListBySearch(query, page string) model.Pager {
 	return pager
 }
 
-func (x FiveMovie) czVideoDetail(id string) model.MovieInfo {
+func (x FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{Id: id}
 	var idxList = make([][]string, 0)
 
@@ -216,90 +215,24 @@ func (x FiveMovie) czVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-func getPlayListByLine(index int, c *colly.Collector) {
-	// module-list
-	c.OnHTML("body", func(element *colly.HTMLElement) {
-		element.ForEach(".module-list", func(i int, element *colly.HTMLElement) {
-			log.Println("[ xxxx]", i)
-		})
-	})
-
-}
-
-func (x FiveMovie) czVideoSource(sid, vid string) model.Video {
+func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
-	var err error
 
-	c := x.Movie.NewColly()
-
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL.String())
-	})
-
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
-		}
-
-		var findLine = ""
-		tmpList := strings.Split(string(response.Body), "\n")
-		for _, line := range tmpList {
-			if strings.Contains(line, "md5.AES.decrypt") {
-				findLine = line
-				break
-			}
-		}
-		if findLine != "" {
-			video, err = x.czParseVideoSource(sid, findLine)
-
-			bs, _ := json.MarshalIndent(video, "", "\t")
-			log.Println(fmt.Sprintf("[video] %s", string(bs)))
-
-			if err != nil {
-				log.Println("[parse.video.error]", err)
-			}
-		}
-	})
-
-	// 解析另一种iframe嵌套的视频
-	c.OnHTML(".videoplay iframe", func(element *colly.HTMLElement) {
-		iframeUrl := element.Attr("src")
-		log.Println("======[iframeUrl] ", iframeUrl)
-
-		if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
-			//需要chromedp加载后拿播放信息（数据通过js加密了）
-			video.Source = iframeUrl
-			video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
-		} else {
-			// 直接可以拿到播放信息
-			video.Source, video.Type = getFrameUrlContents(iframeUrl)
-			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.Movie.IsCache)
-			// 1、转为本地m3u8
-			// 2、修改m3u8文件内容地址,支持跨域
-		}
-	})
-
-	c.OnHTML(".jujiinfo", func(element *colly.HTMLElement) {
-		video.Name = element.ChildText("h3")
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
-		}
-	})
-
-	err = c.Visit(fmt.Sprintf(fiveDetailUrl, sid))
-	if err != nil {
-		log.Println("[ERR]", err.Error())
-	}
+	video.Source = x.fiveParseVideoUrl(sid)
+	video.Url = video.Source
 
 	// 视频类型问题处理
-	video = handleVideoType(video)
+	video = x.handleVideoType(video)
 
 	return video
 }
 
-func (x FiveMovie) czParseVideoSource(id, js string) (model.Video, error) {
+func (x FiveMovie) handleVideoType(v model.Video) model.Video {
+	v.Type = "hls"
+	return v
+}
+
+func (x FiveMovie) fiveParseVideoSource(id, js string) (model.Video, error) {
 	var video = model.Video{}
 	tmpList := strings.Split(strings.TrimSpace(js), ";")
 
