@@ -217,7 +217,8 @@ func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
 	video.Source = x.fiveParseVideoUrl(sid)
-	video.Url = video.Source
+
+	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 
 	// 视频类型问题处理
 	video = x.handleVideoType(video)
