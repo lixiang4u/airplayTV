@@ -36,3 +36,7 @@
     [domains.referer]
         "https://al.cos20.aliyundrive.asia:81" = "https://www.czspp.com/"
 
+    # five源的视频域名(从播放页面处理的视频播放地址的主机)
+    fiveVideoHost = [
+        "https://m3u8.suoyoudianying.com:2345",
+    ]

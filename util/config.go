@@ -15,6 +15,7 @@ var (
 	RedirectConfig []string
 	DirectConfig   []string
 	RefererConfig  map[string]string
+	FiveVideoHost  []string
 )
 
 func LoadConfig() {
@@ -29,4 +30,5 @@ func LoadConfig() {
 	RedirectConfig = viper.GetStringSlice("domains.redirect")
 	DirectConfig = viper.GetStringSlice("domains.direct")
 	RefererConfig = viper.GetStringMapString("domains.referer")
+	FiveVideoHost = viper.GetStringSlice("domains.fiveVideoHost")
 }

@@ -2,9 +2,12 @@ package service
 
 import "C"
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
@@ -12,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -19,7 +23,7 @@ var (
 	fiveTagUrl    = "https://555movie.me/label/new/page/%d.html"
 	fiveSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%d"
 	fiveDetailUrl = "https://555movie.me/voddetail/%s.html"
-	fivePlayUrl   = "https://www.czspp.com/v_play/%s.html"
+	fivePlayUrl   = "https://555movie.me/vodplay/%s.html"
 )
 
 //========================================================================
@@ -284,7 +288,7 @@ func (x FiveMovie) czVideoSource(sid, vid string) model.Video {
 		}
 	})
 
-	err = c.Visit(fmt.Sprintf(czPlayUrl, sid))
+	err = c.Visit(fmt.Sprintf(fiveDetailUrl, sid))
 	if err != nil {
 		log.Println("[ERR]", err.Error())
 	}
@@ -369,4 +373,54 @@ func (x FiveMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.Movie.IsCache)
 
 	return video, nil
+}
+
+func (x FiveMovie) fiveParseVideoUrl(id string) string {
+	var findUrl string
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch ev := ev.(type) {
+		case *network.EventRequestWillBeSent:
+			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
+				ev.Request.URL = ""
+			}
+			log.Println("[network.EventRequestWillBeSent]", ev.Type, util.HandleHost(ev.Request.URL))
+			if util.StringInList(util.HandleHost(ev.Request.URL), util.FiveVideoHost) {
+				findUrl = ev.Request.URL
+				cancel()
+			}
+		case *network.EventWebSocketCreated:
+			//log.Println("[network.EventWebSocketCreated]", ev.URL)
+		case *network.EventWebSocketFrameError:
+			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+		case *network.EventWebSocketFrameSent:
+			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
+		case *network.EventWebSocketFrameReceived:
+			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
+		case *network.EventResponseReceived:
+			//log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+		}
+	})
+
+	err := chromedp.Run(ctx,
+		chromedp.Tasks{
+			network.Enable(),
+			chromedp.Navigate(fmt.Sprintf(fivePlayUrl, id)),
+			chromedp.WaitVisible("#I_FUCK_YOU"), // 等一个不存在的节点，然后通过event中cancel()接下来的所有request
+		},
+	)
+
+	if err != nil {
+		log.Println("[chromedp.Run.Error]", err.Error())
+	}
+
+	return findUrl
 }
