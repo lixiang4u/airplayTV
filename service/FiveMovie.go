@@ -79,7 +79,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 	c.OnHTML("#page", func(element *colly.HTMLElement) {
 		element.ForEach("a.page-next", func(i int, element *colly.HTMLElement) {
 			tmpList := strings.Split(element.Attr("href"), "/")
-			n, _ := strconv.Atoi(tmpList[len(tmpList)-1])
+			n, _ := strconv.Atoi(strings.TrimRight(tmpList[len(tmpList)-1], ".html"))
 			if n*pager.Limit > pager.Total {
 				pager.Total = n * pager.Limit
 			}
