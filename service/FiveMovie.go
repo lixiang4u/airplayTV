@@ -2,6 +2,7 @@ package service
 
 import "C"
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/chromedp/cdproto/network"
@@ -152,8 +153,8 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	})
 	c.OnResponse(func(response *colly.Response) {
 		log.Println("[====> [response]", string(response.Body))
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
+		if newResp := x.checkFiveWaf(response.Body); newResp != nil {
+			//response.Body = newResp
 		}
 	})
 
@@ -220,7 +221,7 @@ func (x FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
 func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
-	video.Source = x.fiveParseVideoUrl(sid)
+	video.Source = x.fiveParseVideoUrl(fmt.Sprintf(fivePlayUrl, sid))
 
 	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 
@@ -235,7 +236,7 @@ func (x FiveMovie) handleVideoType(v model.Video) model.Video {
 	return v
 }
 
-func (x FiveMovie) fiveParseVideoUrl(id string) string {
+func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 	var findUrl string
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -273,7 +274,7 @@ func (x FiveMovie) fiveParseVideoUrl(id string) string {
 	err := chromedp.Run(ctx,
 		chromedp.Tasks{
 			network.Enable(),
-			chromedp.Navigate(fmt.Sprintf(fivePlayUrl, id)),
+			chromedp.Navigate(requestUrl),
 			chromedp.WaitVisible("#I_FUCK_YOU"), // 等一个不存在的节点，然后通过event中cancel()接下来的所有request
 		},
 	)
@@ -283,4 +284,15 @@ func (x FiveMovie) fiveParseVideoUrl(id string) string {
 	}
 
 	return findUrl
+}
+
+func (x FiveMovie) checkFiveWaf(responseBody []byte) []byte {
+	// <script src="/_guard/html.js?js=click_html"></script>
+	if !bytes.Contains(responseBody, []byte("_guard/html.js?js=click_html")) {
+		return responseBody
+	}
+
+	x.fiveParseVideoUrl("https://555movie.me/vodsearch/天----------1---.html")
+
+	return nil
 }
