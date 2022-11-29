@@ -147,7 +147,8 @@ func (x LVMovie) lvVideoSource(sid, vid string) model.Video {
 				continue
 			}
 			if urls[1] == tmpList[0] && urls[2] == tmpList[1] {
-				info.Url = urls[3]
+				//info.Url = urls[3]
+				info.Url = HandleSrcM3U8FileToLocal(sid, urls[3], x.Movie.IsCache)
 				info.Type = "hls"
 			}
 		}
