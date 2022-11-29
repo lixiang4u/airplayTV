@@ -86,7 +86,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 		})
 	})
 
-	c.OnHTML(".module-main .page-current", func(element *colly.HTMLElement) {
+	c.OnHTML("#page .page-current", func(element *colly.HTMLElement) {
 		pager.Current, _ = strconv.Atoi(element.Text)
 	})
 
