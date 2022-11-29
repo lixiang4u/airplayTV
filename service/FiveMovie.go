@@ -17,8 +17,8 @@ import (
 
 var (
 	fiveHost      = "https://555movie.me"
-	fiveTagUrl    = "https://555movie.me/label/new/page/%d.html"
-	fiveSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%d"
+	fiveTagUrl    = "https://555movie.me/label/netflix/page/%d.html"
+	fiveSearchUrl = "https://555movie.me/vodsearch/%s----------%d---.html"
 	fiveDetailUrl = "https://555movie.me/voddetail/%s.html"
 	fivePlayUrl   = "https://555movie.me/vodplay/%s.html"
 )
@@ -111,16 +111,16 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 
 func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
-	pager.Limit = 20
+	pager.Limit = 16
 
 	c := x.Movie.NewColly()
 
-	c.OnHTML(".search_list ul li", func(element *colly.HTMLElement) {
-		name := element.ChildText(".dytit a")
-		url := element.ChildAttr(".dytit a", "href")
-		thumb := element.ChildAttr("img.thumb", "data-original")
-		tag := element.ChildText(".nostag")
-		actors := element.ChildText(".inzhuy")
+	c.OnHTML(".module-items .module-card-item", func(element *colly.HTMLElement) {
+		name := element.ChildText(".module-card-item-title a strong")
+		url := element.ChildAttr(".module-card-item-title a", "href")
+		thumb := element.ChildAttr(".module-item-pic .lazyload", "data-original")
+		tag := element.ChildText(".module-item-note")
+		actors := element.ChildText(".module-info-item-content")
 
 		pager.List = append(pager.List, model.MovieInfo{
 			Id:     util.CZHandleUrlToId(url),
@@ -132,28 +132,31 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 		})
 	})
 
-	c.OnHTML(".dytop .dy_tit_big", func(element *colly.HTMLElement) {
-		element.ForEach("span", func(i int, element *colly.HTMLElement) {
-			if i == 0 {
-				pager.Total, _ = strconv.Atoi(element.Text)
+	c.OnHTML("#page", func(element *colly.HTMLElement) {
+		// /vodsearch/WE----------51---.html
+		element.ForEach("a", func(i int, element *colly.HTMLElement) {
+
+			tmpList := strings.Split(element.Attr("href"), "-")
+			log.Println("[xxx]", util.ToJSON(tmpList, true))
+			if len(tmpList) < 4 {
+				return
 			}
+			pager.Total, _ = strconv.Atoi(tmpList[len(tmpList)-4])
 		})
 	})
 
-	c.OnHTML(".pagenavi_txt .current", func(element *colly.HTMLElement) {
-		pager.Current, _ = strconv.Atoi(element.Text)
-	})
+	pager.Current = util.HandlePageNumber(page)
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
-	c.OnResponse(func(response *colly.Response) {
-		if newResp := isWaf(string(response.Body)); newResp != nil {
-			response.Body = newResp
-		}
-	})
+	//c.OnResponse(func(response *colly.Response) {
+	//	if newResp := isWaf(string(response.Body)); newResp != nil {
+	//		response.Body = newResp
+	//	}
+	//})
 
-	err := c.Visit(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
+	err := c.Visit(fmt.Sprintf(fiveSearchUrl, query, util.HandlePageNumber(page)))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
