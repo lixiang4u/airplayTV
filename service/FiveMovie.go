@@ -76,7 +76,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 		})
 	})
 
-	c.OnHTML(".module-main #page", func(element *colly.HTMLElement) {
+	c.OnHTML("#page", func(element *colly.HTMLElement) {
 		element.ForEach("a.page-next", func(i int, element *colly.HTMLElement) {
 			tmpList := strings.Split(element.Attr("href"), "/")
 			n, _ := strconv.Atoi(tmpList[len(tmpList)-1])
@@ -150,11 +150,12 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
-	//c.OnResponse(func(response *colly.Response) {
-	//	if newResp := isWaf(string(response.Body)); newResp != nil {
-	//		response.Body = newResp
-	//	}
-	//})
+	c.OnResponse(func(response *colly.Response) {
+		log.Println("[====> [response]", string(response.Body))
+		if newResp := isWaf(string(response.Body)); newResp != nil {
+			response.Body = newResp
+		}
+	})
 
 	err := c.Visit(fmt.Sprintf(fiveSearchUrl, query, util.HandlePageNumber(page)))
 	if err != nil {
