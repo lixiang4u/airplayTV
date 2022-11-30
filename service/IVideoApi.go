@@ -37,6 +37,7 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 		"hd.njeere.com",
 		"s1.czspp.com",
 		"yun.m3.c-zzy.online", // 这个需要特殊处理，返回的是m3u8数据，但是后缀是mp4
+		"vt1.doubanio.com",    //https://vt1.doubanio.com/202211281908/3009135258a3492c9c260af15c3c9027/view/movie/M/402970553.mp4
 	}) {
 		return sourceUrl
 	}

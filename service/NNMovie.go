@@ -234,6 +234,9 @@ func (x NNMovie) nnVideoSource(sid, vid string) model.Video {
 	video.Type = "hls" // m3u8 都是hls ???
 
 	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
+	if strings.HasSuffix(video.Url, ".mp4") {
+		video.Type = "auto"
+	}
 
 	return video
 }
