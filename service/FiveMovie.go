@@ -111,6 +111,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 }
 
 func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
+	var requestUrl = fmt.Sprintf(fiveSearchUrl, query, util.HandlePageNumber(page))
 	var pager = model.Pager{}
 	pager.Limit = 16
 
@@ -138,7 +139,6 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 		element.ForEach("a", func(i int, element *colly.HTMLElement) {
 
 			tmpList := strings.Split(element.Attr("href"), "-")
-			log.Println("[xxx]", util.ToJSON(tmpList, true))
 			if len(tmpList) < 4 {
 				return
 			}
@@ -152,13 +152,11 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 		log.Println("Visiting", request.URL.String())
 	})
 	c.OnResponse(func(response *colly.Response) {
-		log.Println("[====> [response]", string(response.Body))
-		if newResp := x.checkFiveWaf(response.Body); newResp != nil {
-			//response.Body = newResp
-		}
+		log.Println("[responseBody]", string(response.Body))
+		x.checkFiveWaf(requestUrl, response.Body)
 	})
 
-	err := c.Visit(fmt.Sprintf(fiveSearchUrl, query, util.HandlePageNumber(page)))
+	err := c.Visit(requestUrl)
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
@@ -236,6 +234,7 @@ func (x FiveMovie) handleVideoType(v model.Video) model.Video {
 	return v
 }
 
+// 筛选网络请求，找到特定地址（可能是播放地址）返回
 func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 	var findUrl string
 
@@ -286,13 +285,66 @@ func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 	return findUrl
 }
 
-func (x FiveMovie) checkFiveWaf(responseBody []byte) []byte {
+// 认证页面模拟点击一下
+func (x FiveMovie) fiveGuardClick(requestUrl string) string {
+	var findUrl string
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch ev := ev.(type) {
+		case *network.EventRequestWillBeSent:
+			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
+				//ev.Request.URL = ""
+			}
+		case *network.EventWebSocketCreated:
+			//log.Println("[network.EventWebSocketCreated]", ev.URL)
+		case *network.EventWebSocketFrameError:
+			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+		case *network.EventWebSocketFrameSent:
+			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
+		case *network.EventWebSocketFrameReceived:
+			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
+		case *network.EventResponseReceived:
+			log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+		}
+	})
+
+	//var res []byte
+	err := chromedp.Run(ctx,
+		chromedp.Tasks{
+			network.Enable(),
+			chromedp.Navigate(requestUrl),
+			chromedp.WaitVisible("#access"),
+			chromedp.Click("#access"),
+			chromedp.WaitVisible(".module-heading-search"),
+			//chromedp.FullScreenshot(&res, 90),
+		},
+	)
+
+	if err != nil {
+		log.Println("[chromedp.Run.Error]", err.Error())
+	}
+	//if err := os.WriteFile("fullScreenshot.png", res, fs.ModePerm); err != nil {
+	//	log.Fatal(err)
+	//}
+
+	return findUrl
+}
+
+func (x FiveMovie) checkFiveWaf(requestUrl string, responseBody []byte) []byte {
 	// <script src="/_guard/html.js?js=click_html"></script>
 	if !bytes.Contains(responseBody, []byte("_guard/html.js?js=click_html")) {
 		return responseBody
 	}
 
-	x.fiveParseVideoUrl("https://555movie.me/vodsearch/天----------1---.html")
+	x.fiveGuardClick(requestUrl)
 
 	return nil
 }
