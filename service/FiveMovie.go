@@ -248,11 +248,10 @@ func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
 		switch ev := ev.(type) {
 		case *network.EventRequestWillBeSent:
-			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
 			if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
 				ev.Request.URL = ""
 			}
-			log.Println("[network.EventRequestWillBeSent]", ev.Type, util.HandleHost(ev.Request.URL))
 			if util.StringInList(util.HandleHost(ev.Request.URL), util.FiveVideoHost) {
 				findUrl = ev.Request.URL
 				cancel()
@@ -299,9 +298,9 @@ func (x FiveMovie) fiveGuardClick(requestUrl string) string {
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
 		switch ev := ev.(type) {
 		case *network.EventRequestWillBeSent:
-			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
 			if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
-				//ev.Request.URL = ""
+				ev.Request.URL = ""
 			}
 		case *network.EventWebSocketCreated:
 			//log.Println("[network.EventWebSocketCreated]", ev.URL)
@@ -312,7 +311,7 @@ func (x FiveMovie) fiveGuardClick(requestUrl string) string {
 		case *network.EventWebSocketFrameReceived:
 			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
 		case *network.EventResponseReceived:
-			log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+			//log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
 		}
 	})
 
