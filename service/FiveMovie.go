@@ -100,8 +100,6 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 		}
 	})
 
-	log.Println(fmt.Sprintf(czTagUrl, tagName, _page))
-
 	err := c.Visit(fmt.Sprintf(fiveTagUrl, _page))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
