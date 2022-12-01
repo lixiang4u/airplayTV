@@ -1,5 +1,11 @@
 # airplayTV
 
+## 项目说明
+- 该项目是研究web安全衍生物
+- 通过一系列技术获取视频网站的播放列表以及播放地址等数据
+- 涉及：js加解密/数据加解密/使用websocket加解密数据/CORS跨域/COOKIE认证/人机认证等
+- 请勿使用该项目用于任何非法用途！！！
+
 ## 配置前端代码
 - 拉取前端代码`git clone git@github.com:lixiang4u/airplayTV-web.git`
 - 找到文件`src/main.js` 替换 `axios.defaults.baseURL`后的服务器地址
