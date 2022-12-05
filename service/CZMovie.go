@@ -77,7 +77,7 @@ func (x *CZMovie) czListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	err := x.SetCookie()
+	err := x.btWaf()
 	if err != nil {
 		log.Println("[绕过人机失败]", err.Error())
 		return pager
@@ -129,7 +129,7 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
 
-	err := x.SetCookie()
+	err := x.btWaf()
 	if err != nil {
 		log.Println("[绕过人机失败]", err.Error())
 		return pager
@@ -176,7 +176,7 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	err := x.SetCookie()
+	err := x.btWaf()
 	if err != nil {
 		log.Println("[绕过人机失败]", err.Error())
 		return info
@@ -213,7 +213,7 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
-	err := x.SetCookie()
+	err := x.btWaf()
 	if err != nil {
 		log.Println("[绕过人机失败]", err.Error())
 		return video
@@ -537,4 +537,28 @@ func (x *CZMovie) SetCookie() error {
 	x.btVerifyUrl = "" // 请求返回数据，先重置认证URL吧
 
 	return errors.New("没有发现cookie")
+}
+
+// 2022-12-05 新增验证规则
+func (x *CZMovie) btWaf() error {
+	b, err := x.httpWrapper.Get(czHost)
+	if err != nil {
+		log.Println("[访问主站错误]", err.Error())
+		return err
+	}
+	regEx := regexp.MustCompile(`<script> window.location.href ="(\S+)"; </script>`)
+	matchResult := regEx.FindStringSubmatch(string(b))
+
+	if len(matchResult) < 2 {
+		log.Println("[没有找到验证调整]")
+		return nil
+	}
+	tmpUrl := fmt.Sprintf("%s%s", strings.TrimRight(czHost, "/"), matchResult[1])
+	b, err = x.httpWrapper.Get(tmpUrl)
+	if err != nil {
+		log.Println("[访问验证URL错误]", tmpUrl)
+		return err
+	}
+
+	return nil
 }
