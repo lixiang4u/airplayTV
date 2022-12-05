@@ -550,7 +550,7 @@ func (x *CZMovie) btWaf() error {
 	matchResult := regEx.FindStringSubmatch(string(b))
 
 	if len(matchResult) < 2 {
-		log.Println("[没有找到验证调整]")
+		log.Println("[没有找到验证跳转/可能不存在验证]")
 		return nil
 	}
 	tmpUrl := fmt.Sprintf("%s%s", strings.TrimRight(czHost, "/"), matchResult[1])
