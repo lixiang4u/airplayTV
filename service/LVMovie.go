@@ -1,13 +1,17 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -31,7 +35,7 @@ func (x LVMovie) Detail(id string) model.MovieInfo {
 }
 
 func (x LVMovie) Source(sid, vid string) model.Video {
-	return x.lvVideoSource(sid, vid)
+	return x.lvVideoSource2(sid, vid)
 }
 
 // ===
@@ -162,6 +166,76 @@ func (x LVMovie) lvVideoSource(sid, vid string) model.Video {
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
+
+	return info
+}
+
+func (x LVMovie) lvVideoSource2(sid, vid string) model.Video {
+	var info = model.Video{}
+	info.Id = sid
+	info.Source = fmt.Sprintf(lvDetailUrl, vid)
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch ev := ev.(type) {
+		case *network.EventRequestWillBeSent:
+			if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
+				ev.Request.URL = ""
+			}
+			if strings.HasSuffix(ev.Request.URL, ".m3u8") {
+				log.Println("[FIND]", ev.Request.URL)
+				tmpInfo := x.getVideoUrl(sid, ev.Request.URL)
+				info.Url = tmpInfo.Url
+				info.Type = "hls"
+				log.Println("[tmpInfo.Url]", tmpInfo.Url)
+				cancel()
+			}
+		case *network.EventWebSocketCreated:
+			//log.Println("[network.EventWebSocketCreated]", ev.URL)
+		case *network.EventWebSocketFrameError:
+			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+		case *network.EventWebSocketFrameSent:
+			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
+		case *network.EventWebSocketFrameReceived:
+			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
+		case *network.EventResponseReceived:
+			log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+		}
+	})
+
+	//var res []byte
+	err := chromedp.Run(ctx,
+		chromedp.Tasks{
+			network.Enable(),
+			chromedp.Navigate(info.Source),
+			chromedp.WaitVisible("#fuck_access"),
+			//chromedp.FullScreenshot(&res, 90),
+		},
+	)
+
+	if err != nil {
+		log.Println("[chromedp.Run.Error]", err.Error())
+	}
+
+	return info
+}
+
+func (x LVMovie) getVideoUrl(sid, requestUrl string) model.Video {
+	var info = model.Video{}
+	info.Id = sid
+	if util.StringInList(util.HandleHost(requestUrl), util.RedirectConfig) {
+		// 拿到重定向URL
+		requestUrl = util.HandleRedirectUrl(requestUrl)
+	}
+	// 下载m3u8
+	info.Url = HandleSrcM3U8FileToLocal(sid, requestUrl, x.Movie.IsCache)
+	info.Type = "hls"
 
 	return info
 }

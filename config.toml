@@ -31,6 +31,7 @@
     # 直接获取重定向即可播放的视频
     redirect = [
         "https://s1.czspp.com:7721",
+        "https://vod.bunediy.com",
         "https://abc.xyz",
     ]
     # 直接可播放
