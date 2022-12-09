@@ -25,7 +25,7 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := playList.(*m3u8.MediaPlaylist)
-		mediapl.Key.URI = ChangeUrlPath(mediapl.Key.URI, sourceUrl)
+		mediapl.Key.URI = ChangeUrlPath(sourceUrl, mediapl.Key.URI)
 		for idx, val := range mediapl.Segments {
 			if val == nil {
 				continue
