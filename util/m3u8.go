@@ -25,13 +25,14 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := playList.(*m3u8.MediaPlaylist)
-		mediapl.Key.URI = HandleKeyUri(mediapl.Key.URI, sourceUrl)
+		mediapl.Key.URI = ChangeUrlPath(mediapl.Key.URI, sourceUrl)
 		for idx, val := range mediapl.Segments {
 			if val == nil {
 				continue
 			}
 			if IsHttpUrl(val.URI) == false {
-				mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+				//mediapl.Segments[idx].URI = fmt.Sprintf("%s/%s", host, strings.TrimLeft(val.URI, "/"))
+				mediapl.Segments[idx].URI = ChangeUrlPath(sourceUrl, val.URI)
 			}
 			if StringInList(HandleHost(mediapl.Segments[idx].URI), CORSConfig) {
 				mediapl.Segments[idx].URI = HandleUrlToCORS(mediapl.Segments[idx].URI)
@@ -66,19 +67,4 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 	}
 
 	return playList.Encode().Bytes()
-}
-
-// 修正key值是相对路径问题
-func HandleKeyUri(keyUri, sourceUrl string) string {
-	if keyUri == "" {
-		return keyUri
-	}
-	if HandleHostname(keyUri) != "" {
-		return keyUri
-	}
-	if strings.HasPrefix(keyUri, "/") {
-		return fmt.Sprintf("%s/%s", HandleHost(sourceUrl), strings.TrimLeft(keyUri, "/"))
-	}
-	tmpUrl, _ := url.Parse(sourceUrl)
-	return fmt.Sprintf("%s://%s/%s/%s", tmpUrl.Scheme, tmpUrl.Host, strings.TrimLeft(path.Dir(tmpUrl.Path), "/"), keyUri)
 }
