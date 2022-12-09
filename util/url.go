@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -56,5 +57,31 @@ func HandleUrlToCORS(tmpUrl string) string {
 		"%s/api/video/cors?src=%s",
 		strings.TrimRight(ApiConfig.Server, "/"),
 		url.QueryEscape(tmpUrl),
+	)
+}
+
+// 合并URL
+func ChangeUrlPath(tmpUrl, tmpPath string) string {
+	if tmpPath == "" {
+		return tmpUrl
+	}
+	// 如果是 / 开头，直接域名+路径
+	if strings.HasPrefix(tmpPath, "/") {
+		return fmt.Sprintf("%s/%s", HandleHost(tmpUrl), strings.TrimLeft(tmpPath, "/"))
+	}
+	parsedUrl, err := url.Parse(tmpUrl)
+	if err != nil {
+		return tmpPath
+	}
+	// 防止空域导致地址不对
+	if parsedUrl.Host == "" {
+		return tmpPath
+	}
+	return fmt.Sprintf(
+		"%s://%s/%s/%s",
+		parsedUrl.Scheme,
+		parsedUrl.Host,
+		strings.TrimLeft(path.Dir(parsedUrl.Path), "/"),
+		tmpPath,
 	)
 }
