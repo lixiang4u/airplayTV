@@ -25,7 +25,9 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := playList.(*m3u8.MediaPlaylist)
-		mediapl.Key.URI = ChangeUrlPath(sourceUrl, mediapl.Key.URI)
+		if mediapl.Key != nil && mediapl.Key.URI != "" {
+			mediapl.Key.URI = ChangeUrlPath(sourceUrl, mediapl.Key.URI)
+		}
 		for idx, val := range mediapl.Segments {
 			if val == nil {
 				continue
@@ -37,6 +39,8 @@ func HandleM3U8Contents(data []byte, sourceUrl string) []byte {
 			if StringInList(HandleHost(mediapl.Segments[idx].URI), CORSConfig) {
 				mediapl.Segments[idx].URI = HandleUrlToCORS(mediapl.Segments[idx].URI)
 			}
+			// 导致播放文件中出现两次加密数据播放器解析失败
+			val.Key = nil
 			// log.Println("[fix]", mediapl.Segments[idx].URI)
 		}
 	case m3u8.MASTER:
