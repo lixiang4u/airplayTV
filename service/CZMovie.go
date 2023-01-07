@@ -136,7 +136,9 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	//	log.Println("[绕过人机失败]", err.Error())
 	//	return pager
 	//}
-	b, err := x.httpWrapper.Get(fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query))
+	x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=666;")
+	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
+	b, err := x.httpWrapper.Post(fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query), "result=666")
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
@@ -578,7 +580,8 @@ func (x *CZMovie) btWafSearch(html []byte, requestUrl string) []byte {
 		return html
 	}
 	log.Println("===========title=======", doc.Find("title").Text())
-	if !strings.Contains(doc.Find("title").Text(), "人机验证") {
+	if strings.TrimSpace(doc.Find("title").Text()) != "人机验证" {
+		log.Println("==========跳过人机验证的BUG========")
 		return html
 	}
 	var mathText = doc.Find("form").Text()
