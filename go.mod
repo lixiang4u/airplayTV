@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/grafov/m3u8 v0.11.1
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/lixiang4u/go-websocket v0.0.0-20210703012044-cbbff2f7473b
+	github.com/lixiang4u/go-websocket v0.0.0-20221206014354-c83e7b939251
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 )
