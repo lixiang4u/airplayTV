@@ -8,8 +8,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/dengsgo/math-engine/engine"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/zc310/headers"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,7 +26,7 @@ import (
 var (
 	czHost      = "https://www.czspp.com"
 	czTagUrl    = "https://www.czspp.com/%s/page/%d"
-	czSearchUrl = "https://www.czspp.com/xssearch?q=%s&p=%d"
+	czSearchUrl = "https://www.czspp.com/page/%d?s=%s"
 	czDetailUrl = "https://www.czspp.com/movie/%s.html"
 	czPlayUrl   = "https://www.czspp.com/v_play/%s.html"
 )
@@ -48,7 +50,8 @@ func (x *CZMovie) Init(movie Movie) {
 	x.httpWrapper.SetHeader("authority", util.HandleHostname(czHost))
 	x.httpWrapper.SetHeader("referer", czHost)
 	x.httpWrapper.SetHeader("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
-	x.httpWrapper.SetHeader("cookie", "")
+	x.httpWrapper.SetHeader("cookie", "myannoun=1; Hm_lvt_c08e84f2c697dc9d0af77ff0dbfb3d6d=1672994352; Hm_lvt_d06dda04a24e89e1117ee1455e217c30=1672994352; esc_search_captcha=1; result=47; Hm_lpvt_c08e84f2c697dc9d0af77ff0dbfb3d6d=1673062363; Hm_lpvt_d06dda04a24e89e1117ee1455e217c30=1673062363")
+	x.httpWrapper.SetHeader("accept-encoding", "br, deflate, gzip")
 }
 
 func (x *CZMovie) ListByTag(tagName, page string) model.Pager {
@@ -128,17 +131,17 @@ func (x *CZMovie) czListByTag(tagName, page string) model.Pager {
 func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 20
-
-	err := x.btWaf()
-	if err != nil {
-		log.Println("[绕过人机失败]", err.Error())
-		return pager
-	}
-	b, err := x.httpWrapper.Get(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
+	//err := x.btWaf()
+	//if err != nil {
+	//	log.Println("[绕过人机失败]", err.Error())
+	//	return pager
+	//}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
+	b = x.btWafSearch(b, fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query))
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
@@ -561,4 +564,36 @@ func (x *CZMovie) btWaf() error {
 	}
 
 	return nil
+}
+
+// 人机验证，计算
+func (x *CZMovie) btWafSearch(html []byte, requestUrl string) []byte {
+	// 第一次POST计算结果后会返回cookie，携带result=xxx的值
+	// 再次POST第一次计算结果表单，写到如下两个cookie
+	//cookie: esc_search_captcha=1
+	//cookie: result=88
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(html)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return html
+	}
+	log.Println("===========title=======", doc.Find("title").Text())
+	if !strings.Contains(doc.Find("title").Text(), "人机验证") {
+		return html
+	}
+	var mathText = doc.Find("form").Text()
+
+	log.Println("[人机验证数据]", mathText)
+
+	_, err = engine.ParseAndExec(mathText[:strings.LastIndex(mathText, "=")])
+	if err != nil {
+		log.Println("[人机验证解析失败]", mathText, err.Error())
+	}
+
+	// 这里直接利用了个cookie检验漏洞，不做二次检验了
+	x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=47;")
+	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
+	b, _ := x.httpWrapper.Post(requestUrl, fmt.Sprintf("result=%d", 55))
+
+	return b
 }

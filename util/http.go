@@ -1,6 +1,10 @@
 package util
 
 import (
+	"compress/flate"
+	"compress/gzip"
+	"github.com/andybalholm/brotli"
+	"github.com/zc310/headers"
 	"io"
 	"net/http"
 	"strings"
@@ -37,6 +41,26 @@ func (x *HttpWrapper) addHeaderParams(req *http.Request) {
 	}
 }
 
+// 解码返回的编码数据，需要根据response头的Content-Encoding确定
+func (x *HttpWrapper) decodeEncoding(resp *http.Response) ([]byte, error) {
+	switch resp.Header.Get(headers.ContentEncoding) {
+	case "br":
+		return io.ReadAll(brotli.NewReader(resp.Body))
+	case "gzip":
+		gr, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return io.ReadAll(gr)
+	case "deflate":
+		zr := flate.NewReader(resp.Body)
+		defer func() { _ = zr.Close() }()
+		return io.ReadAll(zr)
+	default:
+		return io.ReadAll(resp.Body)
+	}
+}
+
 func (x *HttpWrapper) Get(requestUrl string) ([]byte, error) {
 	req, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
@@ -49,7 +73,7 @@ func (x *HttpWrapper) Get(requestUrl string) ([]byte, error) {
 		return nil, err
 	}
 
-	return io.ReadAll(resp.Body)
+	return x.decodeEncoding(resp)
 }
 
 func (x *HttpWrapper) Post(requestUrl, rawBody string) ([]byte, error) {
@@ -64,7 +88,7 @@ func (x *HttpWrapper) Post(requestUrl, rawBody string) ([]byte, error) {
 		return nil, err
 	}
 
-	return io.ReadAll(resp.Body)
+	return x.decodeEncoding(resp)
 }
 
 func (x *HttpWrapper) GetResponse(requestUrl string) (map[string][]string, []byte, error) {
@@ -83,4 +107,21 @@ func (x *HttpWrapper) GetResponse(requestUrl string) (map[string][]string, []byt
 		return nil, nil, err
 	}
 	return resp.Header, b, nil
+}
+
+func (x *HttpWrapper) PostResponse(requestUrl, rawBody string) (map[string][]string, []byte, error) {
+	req, err := http.NewRequest("POST", requestUrl, strings.NewReader(rawBody))
+	if err != nil {
+		return nil, nil, err
+	}
+	x.addHeaderParams(req)
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	b, err := x.decodeEncoding(resp)
+
+	return resp.Header, b, err
 }
