@@ -26,7 +26,7 @@ import (
 var (
 	czHost      = "https://www.czspp.com"
 	czTagUrl    = "https://www.czspp.com/%s/page/%d"
-	czSearchUrl = "https://www.czspp.com/page/%d?s=%s"
+	czSearchUrl = "https://czzy01.com/page/%d?s=%s"
 	czDetailUrl = "https://www.czspp.com/movie/%s.html"
 	czPlayUrl   = "https://www.czspp.com/v_play/%s.html"
 )
