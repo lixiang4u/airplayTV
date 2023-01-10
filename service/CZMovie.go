@@ -104,7 +104,7 @@ func (x *CZMovie) czListByTag(tagName, page string) model.Pager {
 		resolution := selection.Find(".hdinfo span").Text()
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:         util.CZHandleUrlToId(tmpUrl),
+			Id:         util.CZHandleUrlToId2(tmpUrl),
 			Name:       name,
 			Thumb:      thumb,
 			Url:        tmpUrl,
@@ -158,7 +158,7 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 		actors := selection.Find(".inzhuy").Text()
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:     util.CZHandleUrlToId(tmpUrl),
+			Id:     util.CZHandleUrlToId2(tmpUrl),
 			Name:   name,
 			Thumb:  thumb,
 			Url:    tmpUrl,
