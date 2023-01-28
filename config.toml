@@ -38,6 +38,7 @@
     direct = [
         "https://huxiu-video-baidu.oss-cn-beijing.aliyuncs.com",
         "https://dora-video.hk.svp.tencent-cloud.com",
+        "https://lf1-cdn-tos.bytegoofy.com",
         "https://abc.xyz"
     ]
 
