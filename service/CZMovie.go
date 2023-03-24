@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	czHost      = "https://www.czspp.com"
-	czTagUrl    = "https://www.czspp.com/%s/page/%d"
+	czHost      = "https://czzy01.com"
+	czTagUrl    = "https://czzy01.com/%s/page/%d"
 	czSearchUrl = "https://czzy01.com/page/%d?s=%s"
-	czDetailUrl = "https://www.czspp.com/movie/%s.html"
-	czPlayUrl   = "https://www.czspp.com/v_play/%s.html"
+	czDetailUrl = "https://czzy01.com/movie/%s.html"
+	czPlayUrl   = "https://czzy01.com/v_play/%s.html"
 )
 
 //========================================================================
@@ -197,8 +197,10 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 		return info
 	}
 
+	log.Println("=====> [paly_list_btn a]")
 	doc.Find(".paly_list_btn a").Each(func(i int, selection *goquery.Selection) {
 		tmpHref, _ := selection.Attr("href")
+		log.Println("=====> [paly_list_btn i]", tmpHref)
 		info.Links = append(info.Links, model.Link{
 			Id:    util.CZHandleUrlToId2(tmpHref),
 			Name:  strings.ReplaceAll(selection.Text(), "厂长", ""),
