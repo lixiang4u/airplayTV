@@ -197,10 +197,8 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 		return info
 	}
 
-	log.Println("=====> [paly_list_btn a]")
 	doc.Find(".paly_list_btn a").Each(func(i int, selection *goquery.Selection) {
 		tmpHref, _ := selection.Attr("href")
-		log.Println("=====> [paly_list_btn i]", tmpHref)
 		info.Links = append(info.Links, model.Link{
 			Id:    util.CZHandleUrlToId2(tmpHref),
 			Name:  strings.ReplaceAll(selection.Text(), "厂长", ""),
