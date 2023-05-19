@@ -14,7 +14,7 @@ import (
 
 var (
 	myPlayUrl   = "https://www.91mayi.com/vodplay/%s.html" //https://www.91mayi.com/vodplay/190119-1-30.html
-	myParseUrl  = "https://zj.shankuwang.com:8443/?url=%s" // 云解析
+	myParseUrl  = "https://zj.sp-flv.com:8443/?url=%s"     // 云解析
 	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"
 	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html"
 	myTagUrl    = "https://www.91mayi.com/vodtype/%s-%d.html"
@@ -42,10 +42,10 @@ func (x MYMovie) Source(sid, vid string) model.Video {
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-//https://www.91mayi.com/vodtype/1.html 电影
-//https://www.91mayi.com/vodtype/2.html 连续剧
-//https://www.91mayi.com/vodtype/3.html 综艺
-//https://www.91mayi.com/vodtype/4.html 动漫
+// https://www.91mayi.com/vodtype/1.html 电影
+// https://www.91mayi.com/vodtype/2.html 连续剧
+// https://www.91mayi.com/vodtype/3.html 综艺
+// https://www.91mayi.com/vodtype/4.html 动漫
 func getTagNumber(tagName string) (tagNumber string) {
 	tagNumber = tagName
 	switch tagName {
