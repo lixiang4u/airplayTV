@@ -68,6 +68,14 @@ func NewRouter() *gin.Engine {
 	r.Use(sessions.Sessions("airplayTV", cookie.NewStore([]byte(viper.GetString("app.secret")))))
 	r.Use(util.SetGINLoggerFormat())
 
+	//r.Use(cors.New(cors.Config{
+	//	AllowOrigins:     []string{"*"},
+	//	AllowMethods:     []string{"PUT", "PATCH", "GET", "POST"},
+	//	AllowHeaders:     []string{"*"},
+	//	ExposeHeaders:    []string{"Content-Length"},
+	//	AllowCredentials: true,
+	//}))
+
 	ws := NewRouterW()
 
 	log.Println("[p]", fmt.Sprintf("%s/app/view/**/*", util.AppPath()))
