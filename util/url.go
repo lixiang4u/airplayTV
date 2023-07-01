@@ -85,3 +85,24 @@ func ChangeUrlPath(tmpUrl, tmpPath string) string {
 		tmpPath,
 	)
 }
+
+func CheckVideoUrl(url string) bool {
+
+	log.Println("[checkUrl]", url)
+	var httpW = HttpWrapper{}
+	headers, err := httpW.Head(url)
+	if err != nil {
+		log.Println("[CheckVideoUrl.Error]", err.Error())
+		return false
+	}
+	v, ok := headers["Content-Type"]
+	if !ok {
+		return false
+	}
+	for _, s := range v {
+		if s == "video/mp4" {
+			return true
+		}
+	}
+	return false
+}

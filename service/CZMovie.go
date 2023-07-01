@@ -347,7 +347,12 @@ func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 		}
 	}
 
-	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
+	//  判断源文件是否需要下载
+	if util.CheckVideoUrl(video.Source) {
+		video.Url = video.Source
+	} else {
+		video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
+	}
 
 	return video, nil
 }

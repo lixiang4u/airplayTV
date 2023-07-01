@@ -125,3 +125,18 @@ func (x *HttpWrapper) PostResponse(requestUrl, rawBody string) (map[string][]str
 
 	return resp.Header, b, err
 }
+
+func (x *HttpWrapper) Head(requestUrl string) (map[string][]string, error) {
+	req, err := http.NewRequest("HEAD", requestUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	x.addHeaderParams(req)
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Header, nil
+}
