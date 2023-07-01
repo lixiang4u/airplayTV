@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -96,13 +97,25 @@ func CheckVideoUrl(url string) bool {
 		return false
 	}
 	v, ok := headers["Content-Type"]
-	if !ok {
-		return false
-	}
-	for _, s := range v {
-		if s == "video/mp4" {
-			return true
+	if ok {
+		for _, s := range v {
+			if s == "video/mp4" {
+				return true
+			}
 		}
 	}
+
+	// 检测文件大小，太大了也认为是视频文件
+	v, ok = headers["Content-Length"]
+	if ok {
+		for _, s := range v {
+			u, _ := strconv.ParseUint(s, 10, 64)
+			// 5*1024*1024 5MB
+			if u > 5*1024*1024 {
+				return true
+			}
+		}
+	}
+
 	return false
 }
