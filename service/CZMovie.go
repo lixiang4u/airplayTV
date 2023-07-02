@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/dengsgo/math-engine/engine"
@@ -262,7 +263,16 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 		} else {
 			// 直接可以拿到播放信息
 			video.Source, video.Type = getFrameUrlContents(iframeUrl)
-			video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+			if video.Source != "" {
+				video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+			} else {
+				video.Source = x.parseNetworkMediaUrl(fmt.Sprintf(czPlayUrl, sid))
+				if util.CheckVideoUrl(video.Source) {
+					video.Url = video.Source
+				} else {
+					video.Url = video.Source + "#default_parser"
+				}
+			}
 			// 1、转为本地m3u8
 			// 2、修改m3u8文件内容地址,支持跨域
 		}
@@ -371,7 +381,7 @@ func handleVideoType(v model.Video) model.Video {
 }
 
 func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
-	sourceUrl = frameUrl
+	//sourceUrl = frameUrl
 	videoType = "auto"
 
 	resp, err := http.Get(frameUrl)
@@ -604,4 +614,51 @@ func (x *CZMovie) btWafSearch(html []byte, requestUrl string) []byte {
 	b, _ := x.httpWrapper.Post(requestUrl, fmt.Sprintf("result=%d", 55))
 
 	return b
+}
+
+// 从视频播放地址分析网络请求并找到媒体请求
+func (x *CZMovie) parseNetworkMediaUrl(requestUrl string) string {
+	var findUrl string
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch ev := ev.(type) {
+		case *network.EventRequestWillBeSent:
+			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			if util.StringInList(ev.Type.String(), []string{"Media"}) {
+				findUrl = ev.Request.URL
+				cancel()
+			}
+		case *network.EventWebSocketCreated:
+			//log.Println("[network.EventWebSocketCreated]", ev.URL)
+		case *network.EventWebSocketFrameError:
+			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+		case *network.EventWebSocketFrameSent:
+			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
+		case *network.EventWebSocketFrameReceived:
+			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
+		case *network.EventResponseReceived:
+			//log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+		}
+	})
+
+	err := chromedp.Run(ctx,
+		chromedp.Tasks{
+			network.Enable(),
+			chromedp.Navigate(requestUrl),
+			chromedp.WaitVisible("#I_FUCK_YOU"), // 等一个不存在的节点，然后通过event中cancel()接下来的所有request
+		},
+	)
+
+	if err != nil {
+		log.Println("[chromedp.Run.Error]", err.Error())
+	}
+
+	return findUrl
 }
