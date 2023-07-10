@@ -624,7 +624,7 @@ func (x *CZMovie) parseNetworkMediaUrl(requestUrl string) string {
 	defer cancel()
 
 	// create a timeout as a safety net to prevent any infinite wait loops
-	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
