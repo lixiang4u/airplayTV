@@ -49,12 +49,13 @@ func Clock() {
 
 // 初始化websocket
 func NewRouterW() go_websocket.WSWrapper {
+	homeController := new(controller.HomeController)
 	var ws = go_websocket.WSWrapper{}
 	ws.Config.Debug = true
 
-	ws.On("info", new(controller.HomeController).InfoW)           //注册列表数据查询
-	ws.On("list", new(controller.HomeController).ListW)           //注册列表数据查询
-	ws.On("broadcast", new(controller.HomeController).BroadcastW) //注册广播消息
+	ws.On("info", homeController.InfoW)           //注册列表数据查询
+	ws.On("list", homeController.ListW)           //注册列表数据查询
+	ws.On("broadcast", homeController.BroadcastW) //注册广播消息
 
 	return ws
 }
@@ -86,25 +87,28 @@ func NewRouter() *gin.Engine {
 	r.Static("/static", "./app/static/")
 	r.Static("/m3u8", "./app/m3u8/")
 
-	r.GET("/", new(controller.HomeController).Index) // 默认首页
+	homeController := new(controller.HomeController)
+	videoController := new(controller.VideoController)
+
+	r.GET("/", homeController.Index) // 默认首页
 
 	// 统一api
-	r.GET("/api/env/predict", new(controller.HomeController).EnvPredict)
-	r.GET("/api/video/search", new(controller.VideoController).Search)
-	r.GET("/api/video/tag/:tagName", new(controller.VideoController).ListByTag)
-	r.GET("/api/video/detail/:id", new(controller.VideoController).Detail)      // 视频详细信息
-	r.GET("/api/video/source/:id", new(controller.VideoController).Source)      // 视频播放信息
-	r.GET("/api/video/tag", new(controller.VideoController).ListByTagV2)        // 支持非路径参数
-	r.GET("/api/video/detail", new(controller.VideoController).DetailV2)        // 支持非路径参数
-	r.GET("/api/video/source", new(controller.VideoController).SourceV2)        // 支持非路径参数
-	r.GET("/api/video/airplay", new(controller.VideoController).Airplay)        // 支持非路径参数
-	r.GET("/api/video/controls", new(controller.VideoController).VideoControls) // 远程遥控功能
-	r.GET("/api/video/cors", new(controller.VideoController).VideoVideoCORS)    // 处理CORS问题 https://api.czspp.com:81/m3/27f4dc5a9b1663195094/ixDR95MU2KkzEZzolGWs0v7FumR9yxWHUhLe7Ea_EgNhL5vaIvS_8BgDvCme9Cl-159akCDxdEgpXAmWMjAO-XIHyn86mudjDSYTmRmApys.m3u8
+	r.GET("/api/env/predict", homeController.EnvPredict)
+	r.GET("/api/video/search", videoController.Search)
+	r.GET("/api/video/tag/:tagName", videoController.ListByTag)
+	r.GET("/api/video/detail/:id", videoController.Detail)      // 视频详细信息
+	r.GET("/api/video/source/:id", videoController.Source)      // 视频播放信息
+	r.GET("/api/video/tag", videoController.ListByTagV2)        // 支持非路径参数
+	r.GET("/api/video/detail", videoController.DetailV2)        // 支持非路径参数
+	r.GET("/api/video/source", videoController.SourceV2)        // 支持非路径参数
+	r.GET("/api/video/airplay", videoController.Airplay)        // 支持非路径参数
+	r.GET("/api/video/controls", videoController.VideoControls) // 远程遥控功能
+	r.GET("/api/video/cors", videoController.VideoVideoCORS)    // 处理CORS问题 https://api.czspp.com:81/m3/27f4dc5a9b1663195094/ixDR95MU2KkzEZzolGWs0v7FumR9yxWHUhLe7Ea_EgNhL5vaIvS_8BgDvCme9Cl-159akCDxdEgpXAmWMjAO-XIHyn86mudjDSYTmRmApys.m3u8
 	r.GET("/api/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
 	})
 
-	r.GET("/tesla/fullscreen", new(controller.HomeController).FullScreen)
+	r.GET("/tesla/fullscreen", homeController.FullScreen)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
