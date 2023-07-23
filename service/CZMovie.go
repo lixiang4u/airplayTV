@@ -47,12 +47,12 @@ func (x *CZMovie) Init(movie Movie) {
 	if x.httpWrapper == nil {
 		x.httpWrapper = &util.HttpWrapper{}
 	}
-	x.httpWrapper.SetHeader("origin", czHost)
+	x.httpWrapper.SetHeader(headers.Origin, czHost)
 	x.httpWrapper.SetHeader("authority", util.HandleHostname(czHost))
-	x.httpWrapper.SetHeader("referer", czHost)
-	x.httpWrapper.SetHeader("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
-	x.httpWrapper.SetHeader("cookie", "myannoun=1; Hm_lvt_c08e84f2c697dc9d0af77ff0dbfb3d6d=1672994352; Hm_lvt_d06dda04a24e89e1117ee1455e217c30=1672994352; esc_search_captcha=1; result=47; Hm_lpvt_c08e84f2c697dc9d0af77ff0dbfb3d6d=1673062363; Hm_lpvt_d06dda04a24e89e1117ee1455e217c30=1673062363")
-	x.httpWrapper.SetHeader("accept-encoding", "br, deflate, gzip")
+	x.httpWrapper.SetHeader(headers.Referer, czHost)
+	x.httpWrapper.SetHeader(headers.UserAgent, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
+	x.httpWrapper.SetHeader(headers.Cookie, "myannoun=1; esc_search_captcha=1; result=47;")
+	x.httpWrapper.SetHeader(headers.AcceptEncoding, "br, deflate, gzip")
 }
 
 func (x *CZMovie) ListByTag(tagName, page string) model.Pager {
