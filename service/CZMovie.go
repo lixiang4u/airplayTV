@@ -25,11 +25,11 @@ import (
 )
 
 var (
-	czHost      = "https://www.cz01.org"
-	czTagUrl    = "https://www.cz01.org/%s/movie_bt_series/dyy/page/%d"
-	czSearchUrl = "https://www.cz01.org/page/%s?s=%s"
-	czDetailUrl = "https://www.cz01.org/movie/%s.html"
-	czPlayUrl   = "https://www.cz01.org/v_play/%s.html"
+	czHost      = "https://www.czzy88.com"
+	czTagUrl    = "https://www.czzy88.com/%s/movie_bt_series/dyy/page/%d"
+	czSearchUrl = "https://www.czzy88.com/page/%s?s=%s"
+	czDetailUrl = "https://www.czzy88.com/movie/%s.html"
+	czPlayUrl   = "https://www.czzy88.com/v_play/%s.html"
 )
 
 //========================================================================

@@ -18,10 +18,11 @@ import (
 )
 
 var (
-	nnM3u8Url   = "https://www.nunuyy5.org/url.php"
-	nnPlayUrl   = "https://www.nunuyy5.org/%s.html"
-	nnSearchUrl = "https://www.nunuyy5.org/so/%s-%s-%d-.html"
-	nnTagUrl    = "https://www.nunuyy5.org/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
+	nnHost      = "https://nnyy.in/"
+	nnM3u8Url   = "https://nnyy.in/url.php"
+	nnPlayUrl   = "https://nnyy.in/%s.html"
+	nnSearchUrl = "https://nnyy.in/so/%s-%s-%d-.html"
+	nnTagUrl    = "https://nnyy.in/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 )
 
 type NNMovie struct{ Movie }
@@ -114,13 +115,13 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 	c.OnHTML(".lists-content ul li", func(element *colly.HTMLElement) {
 		name := element.ChildText("h2 a")
 		tmpUrl := element.ChildAttr("a.thumbnail", "href")
-		thumb := element.ChildAttr("img.thumb", "src")
+		thumb := element.ChildAttr("img.thumb", "data-src")
 		tag := element.ChildText(".note")
 
 		pager.List = append(pager.List, model.MovieInfo{
 			Id:    nnHandleUrlToId(tmpUrl),
 			Name:  name,
-			Thumb: thumb,
+			Thumb: util.FillUrlHost(thumb, nnHost),
 			Url:   tmpUrl,
 			Tag:   tag,
 		})

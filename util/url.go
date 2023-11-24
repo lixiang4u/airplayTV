@@ -119,3 +119,10 @@ func CheckVideoUrl(url string) bool {
 
 	return false
 }
+
+func FillUrlHost(tmpUrl string, host string) string {
+	if IsHttpUrl(tmpUrl) {
+		return tmpUrl
+	}
+	return fmt.Sprintf("%s/%s", strings.TrimRight(host, "/"), strings.TrimLeft(tmpUrl, "/"))
+}
