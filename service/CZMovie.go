@@ -262,8 +262,8 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 			video.Source = iframeUrl
 			video.Url = handleIframeEncrypedSourceUrl(iframeUrl)
 		} else {
-			// 直接可以拿到播放信息
-			video.Source, video.Type = getFrameUrlContents(iframeUrl)
+			// 直接可以拿到播放信息，或者需要解析加密的js数据得到信息
+			video.Source, video.Type = x.getFrameUrlContents(iframeUrl)
 			if video.Source != "" {
 				if util.CheckVideoUrl(video.Source) {
 					video.Url = video.Source
@@ -385,7 +385,7 @@ func handleVideoType(v model.Video) model.Video {
 	return v
 }
 
-func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
+func (x *CZMovie) getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
 	//sourceUrl = frameUrl
 	videoType = "auto"
 
@@ -429,37 +429,6 @@ func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
 				videoType = "hls"
 			}
 		}
-	}
-
-	return
-}
-
-func (x *CZMovie) czFrameWithEncryptedData(frameUrl string) (sourceUrl, videoType string) {
-	//sourceUrl = frameUrl
-	videoType = "auto"
-
-	resp, err := http.Get(frameUrl)
-	if err != nil {
-		log.Println("[getFrameUrlContents.get.error]", err.Error())
-		return
-	}
-	bs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("[getFrameUrlContents.body.error]", err.Error())
-		return
-	}
-
-	// 匹配播放文件
-	regEx := regexp.MustCompile(`sources: \[{(\s+)src: '(\S+)',(\s+)type: '(\S+)'`)
-	r := regEx.FindStringSubmatch(string(bs))
-	if len(r) < 4 {
-		return
-	}
-	sourceUrl = r[2]
-
-	switch r[4] {
-	case "application/vnd.apple.mpegurl":
-		videoType = "hls"
 	}
 
 	return
