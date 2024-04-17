@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,12 +15,12 @@ import (
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -257,6 +258,9 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	// 解析另一种iframe嵌套的视频
 	iframeUrl, _ := doc.Find(".videoplay iframe").Attr("src")
 	if strings.TrimSpace(iframeUrl) != "" {
+
+		log.Println("[iframeUrl]", iframeUrl)
+
 		if _, ok := util.RefererConfig[util.HandleHost(iframeUrl)]; ok {
 			//需要chromedp加载后拿播放信息（数据通过js加密了）
 			video.Source = iframeUrl
@@ -389,19 +393,28 @@ func (x *CZMovie) getFrameUrlContents(frameUrl string) (sourceUrl, videoType str
 	//sourceUrl = frameUrl
 	videoType = "auto"
 
-	resp, err := http.Get(frameUrl)
+	// 请求这个域名需要（https://vavyuncz.cz01.org:83）
+	x.httpWrapper.SetHeader("sec-fetch-mode", "navigate")
+	x.httpWrapper.SetHeader("sec-fetch-dest", "iframe")
+
+	bs, err := x.httpWrapper.Get(frameUrl)
 	if err != nil {
 		log.Println("[getFrameUrlContents.get.error]", err.Error())
 		return
 	}
-	bs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("[getFrameUrlContents.body.error]", err.Error())
-		return
-	}
 	var htmlContents = string(bs)
 
-	if strings.Contains(htmlContents, "var player") && strings.Contains(htmlContents, "var rand") {
+	//log.Println("[=============htmlContents]", htmlContents)
+
+	if strings.Contains(htmlContents, "var result_v2") && strings.Contains(htmlContents, "<script src=\"/js/player/index.min.js") {
+		regEx1 := regexp.MustCompile(`var result_v2 = {"data":"(\S+?)"`)
+		r1 := regEx1.FindStringSubmatch(htmlContents)
+		if len(r1) > 1 {
+			sourceUrl = x.parseEncryptedJsToUrl(r1[1])
+		} else {
+			log.Println("[iframe播放信息解析失败1]")
+		}
+	} else if strings.Contains(htmlContents, "var player") && strings.Contains(htmlContents, "var rand") {
 		// 是否是AES加密数据
 		regEx1 := regexp.MustCompile(`var rand = "(\S+)";`)
 		regEx2 := regexp.MustCompile(`var player = "(\S+)";`)
@@ -410,12 +423,14 @@ func (x *CZMovie) getFrameUrlContents(frameUrl string) (sourceUrl, videoType str
 		if len(r1) > 1 && len(r2) > 1 {
 			buf, err := util.DecryptByAes([]byte("VFBTzdujpR9FWBhe"), []byte(r1[1]), r2[1])
 			if err != nil {
-				log.Println("[CZ.iframe.AES.Decrypt.Error]", err.Error())
+				log.Println("[iframe播放信息解析失败2]", err.Error())
 			} else {
 				var result = gjson.ParseBytes(buf)
 				videoType = result.Get("vodtype").String()
 				sourceUrl = result.Get("url").String()
 			}
+		} else {
+			log.Println("[iframe播放信息解析失败2-2]", err.Error())
 		}
 	} else if strings.Contains(htmlContents, "sources:") {
 		// 匹配播放文件
@@ -428,6 +443,9 @@ func (x *CZMovie) getFrameUrlContents(frameUrl string) (sourceUrl, videoType str
 			case "application/vnd.apple.mpegurl":
 				videoType = "hls"
 			}
+		} else {
+			log.Println("[iframe播放信息解析失败3]")
+
 		}
 	}
 
@@ -697,4 +715,23 @@ func (x *CZMovie) parseNetworkMediaUrl(requestUrl string) string {
 	}
 
 	return findUrl
+}
+
+func (x *CZMovie) parseEncryptedJsToUrl(result_v2 string) string {
+	var chars = strings.Split(result_v2, "")
+	slices.Reverse(chars)
+	var sb = strings.Builder{}
+	var tmpStr = ""
+	var buf []byte
+	var err error
+	for i := 0; i < len(chars); i += 2 {
+		tmpStr = chars[i] + chars[i+1]
+		buf, err = hex.DecodeString(tmpStr)
+		if err != nil {
+			log.Println("[decodeHexError]", err.Error())
+			break
+		}
+		sb.Write(buf)
+	}
+	return sb.String()
 }

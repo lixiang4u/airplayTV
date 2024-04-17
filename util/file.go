@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"io"
 	url2 "net/url"
 	"os"
 	"path/filepath"
@@ -56,4 +57,12 @@ func GetLocalVideoFileUrl(absLocalPath string) string {
 
 func GetCollyCacheDir() string {
 	return fmt.Sprintf("%s/app/cache/colly", AppPath())
+}
+
+func FileReadAll(filename string) ([]byte, error) {
+	fi, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(fi)
 }

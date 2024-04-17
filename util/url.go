@@ -97,6 +97,11 @@ func CheckVideoUrl(url string) bool {
 		log.Println("[CheckVideoUrl.Error]", err.Error())
 		return false
 	}
+
+	defer func() {
+		log.Println("[CheckVideoUrl.headers]", ToJSON(headers, false))
+	}()
+
 	v, ok := headers["Content-Type"]
 	if ok {
 		for _, s := range v {
