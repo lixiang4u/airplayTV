@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	myPlayUrl   = "https://www.91mayi.com/vodplay/%s.html" //https://www.91mayi.com/vodplay/190119-1-30.html
-	myParseUrl  = "https://zj.sp-flv.com:8443/?url=%s"     // 云解析
-	myDetailUrl = "https://www.91mayi.com/voddetail/%s.html"
-	mySearchUrl = "https://www.91mayi.com/vodsearch/%s----------%d---.html"
-	myTagUrl    = "https://www.91mayi.com/vodtype/%s-%d.html"
+	myPlayUrl   = "https://www.mayiyingshi.tv/vodplay/%s.html" //https://www.91mayi.com/vodplay/190119-1-30.html
+	myParseUrl  = "https://zj.sp-flv.com:8443/?url=%s"         // 云解析
+	myDetailUrl = "https://www.mayiyingshi.tv/voddetail/%s.html"
+	mySearchUrl = "https://www.mayiyingshi.tv/vodsearch/%s----------%d---.html"
+	myTagUrl    = "https://www.mayiyingshi.tv/vodtype/1-%d.html"
 )
 
 type MYMovie struct{ Movie }
@@ -92,7 +92,7 @@ func (x MYMovie) myListByTag(tagName, page string) model.Pager {
 		pager.Total = pager.Limit * totalIndex
 	})
 
-	err := c.Visit(fmt.Sprintf(myTagUrl, tagName, util.HandlePageNumber(page)))
+	err := c.Visit(fmt.Sprintf(myTagUrl, util.HandlePageNumber(page)))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
@@ -154,11 +154,11 @@ func (x MYMovie) myVideoDetail(id string) model.MovieInfo {
 	c := x.Movie.NewColly()
 
 	c.OnHTML(".col-md-wide-75", func(element *colly.HTMLElement) {
-		info.Thumb = element.ChildAttr("a.v-thumb .lazyload", "data-original")
-		info.Name = element.ChildAttr("a.v-thumb", "title")
+		info.Thumb = element.ChildAttr("img.lazyload", "data-original")
+		info.Name = element.ChildAttr(".title", "title")
 		info.Intro = element.ChildText(".detail-content")
-		info.Tag = element.ChildText(".pic-text")
-		info.Url = element.ChildAttr("a.v-thumb", "href")
+		//info.Tag = element.ChildText(".pic-text")
+		//info.Url = element.ChildAttr("a.v-thumb", "href")
 	})
 
 	c.OnHTML(".stui-content__playlist", func(element *colly.HTMLElement) {
