@@ -28,7 +28,7 @@ import (
 var (
 	czHost      = "https://www.czzy88.com"
 	czTagUrl    = "https://www.czzy88.com/%s/movie_bt_series/dyy/page/%d"
-	czSearchUrl = "https://www.czzy88.com/page/%s?s=%s"
+	czSearchUrl = "https://www.cz233.com/xsseanmch?q=%s&f=_all&p=%d"
 	czDetailUrl = "https://www.czzy88.com/movie/%s.html"
 	czPlayUrl   = "https://www.czzy88.com/v_play/%s.html"
 )
@@ -140,12 +140,12 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	//}
 	x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=666;")
 	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
-	b, err := x.httpWrapper.Post(fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query), "result=666")
+	h, b, err := x.httpWrapper.PostResponse(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)), "result=666")
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
-	b = x.btWafSearch(b, fmt.Sprintf(czSearchUrl, util.HandlePageNumber(page), query))
+	b = x.btWafSearch(h, b, fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
@@ -607,7 +607,7 @@ func (x *CZMovie) btWaf() error {
 }
 
 // 人机验证，计算
-func (x *CZMovie) btWafSearch(html []byte, requestUrl string) []byte {
+func (x *CZMovie) btWafSearch(h map[string][]string, html []byte, requestUrl string) []byte {
 	// 第一次POST计算结果后会返回cookie，携带result=xxx的值
 	// 再次POST第一次计算结果表单，写到如下两个cookie
 	//cookie: esc_search_captcha=1
@@ -626,17 +626,30 @@ func (x *CZMovie) btWafSearch(html []byte, requestUrl string) []byte {
 
 	log.Println("[人机验证数据]", mathText)
 
-	_, err = engine.ParseAndExec(mathText[:strings.LastIndex(mathText, "=")])
+	var result = 0.0
+	result, err = engine.ParseAndExec(mathText[:strings.LastIndex(mathText, "=")])
 	if err != nil {
 		log.Println("[人机验证解析失败]", mathText, err.Error())
 	}
 
-	// 这里直接利用了个cookie检验漏洞，不做二次检验了
-	x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=47;")
-	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
-	b, _ := x.httpWrapper.Post(requestUrl, fmt.Sprintf("result=%d", 55))
+	v, ok := h["Set-Cookie"]
+	if ok {
+		for _, s := range v {
+			if strings.Contains(s, "PHPSESSID") {
+				x.httpWrapper.SetHeader(headers.Cookie, s)
+			}
+		}
+	}
 
-	return b
+	// 这里直接利用了个cookie检验漏洞，不做二次检验了
+	//x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=47;")
+	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
+
+	// 还他妈需要发两次请求什么鬼
+	_, _ = x.httpWrapper.Post(requestUrl, fmt.Sprintf("result=%d", int(result)))
+	b1, _ := x.httpWrapper.Post(requestUrl, fmt.Sprintf("result=%d", int(result)))
+
+	return b1
 }
 
 // 从视频播放地址分析网络请求并找到媒体请求
