@@ -1,12 +1,14 @@
 module github.com/lixiang4u/airplayTV
 
-go 1.17
+go 1.22
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/andybalholm/brotli v1.0.4
 	github.com/chromedp/cdproto v0.0.0-20220812200530-d0d83820bffc
 	github.com/chromedp/chromedp v0.8.4
 	github.com/dengsgo/math-engine v0.0.0-20220911070221-a5a560a8684b
+	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-sql-driver/mysql v1.6.0
@@ -18,17 +20,16 @@ require (
 	github.com/lixiang4u/go-websocket v0.0.0-20221206014354-c83e7b939251
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
+	github.com/zc310/headers v0.0.0-20210220023006-06acd8c1c220
 )
 
 require (
-	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antchfx/htmlquery v1.2.5 // indirect
 	github.com/antchfx/xmlquery v1.3.12 // indirect
 	github.com/antchfx/xpath v1.2.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/gin-contrib/cors v1.4.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/autotls v0.0.3 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -72,8 +73,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
+	github.com/tidwall/gjson v1.17.1 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
-	github.com/zc310/headers v0.0.0-20210220023006-06acd8c1c220 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect

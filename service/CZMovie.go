@@ -12,6 +12,7 @@ import (
 	"github.com/dengsgo/math-engine/engine"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"io"
 	"io/ioutil"
@@ -264,7 +265,11 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 			// 直接可以拿到播放信息
 			video.Source, video.Type = getFrameUrlContents(iframeUrl)
 			if video.Source != "" {
-				video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+				if util.CheckVideoUrl(video.Source) {
+					video.Url = video.Source
+				} else {
+					video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+				}
 			} else {
 				video.Source = x.parseNetworkMediaUrl(fmt.Sprintf(czPlayUrl, sid))
 				if util.CheckVideoUrl(video.Source) {
@@ -381,6 +386,55 @@ func handleVideoType(v model.Video) model.Video {
 }
 
 func getFrameUrlContents(frameUrl string) (sourceUrl, videoType string) {
+	//sourceUrl = frameUrl
+	videoType = "auto"
+
+	resp, err := http.Get(frameUrl)
+	if err != nil {
+		log.Println("[getFrameUrlContents.get.error]", err.Error())
+		return
+	}
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("[getFrameUrlContents.body.error]", err.Error())
+		return
+	}
+	var htmlContents = string(bs)
+
+	if strings.Contains(htmlContents, "var player") && strings.Contains(htmlContents, "var rand") {
+		// 是否是AES加密数据
+		regEx1 := regexp.MustCompile(`var rand = "(\S+)";`)
+		regEx2 := regexp.MustCompile(`var player = "(\S+)";`)
+		r1 := regEx1.FindStringSubmatch(htmlContents)
+		r2 := regEx2.FindStringSubmatch(htmlContents)
+		if len(r1) > 1 && len(r2) > 1 {
+			buf, err := util.DecryptByAes([]byte("VFBTzdujpR9FWBhe"), []byte(r1[1]), r2[1])
+			if err != nil {
+				log.Println("[CZ.iframe.AES.Decrypt.Error]", err.Error())
+			} else {
+				var result = gjson.ParseBytes(buf)
+				videoType = result.Get("vodtype").String()
+				sourceUrl = result.Get("url").String()
+			}
+		}
+	} else if strings.Contains(htmlContents, "sources:") {
+		// 匹配播放文件
+		regEx := regexp.MustCompile(`sources: \[{(\s+)src: '(\S+)',(\s+)type: '(\S+)'`)
+		r := regEx.FindStringSubmatch(htmlContents)
+		if len(r) >= 4 {
+			sourceUrl = r[2]
+
+			switch r[4] {
+			case "application/vnd.apple.mpegurl":
+				videoType = "hls"
+			}
+		}
+	}
+
+	return
+}
+
+func (x *CZMovie) czFrameWithEncryptedData(frameUrl string) (sourceUrl, videoType string) {
 	//sourceUrl = frameUrl
 	videoType = "auto"
 

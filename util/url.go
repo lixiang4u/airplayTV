@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -115,6 +116,12 @@ func CheckVideoUrl(url string) bool {
 				return true
 			}
 		}
+	}
+
+	// 如果返回的数据是支持范围请求，则说明可能是个大文件
+	v, ok = headers["Accept-Ranges"]
+	if ok && slices.Contains(v, "bytes") {
+		return true
 	}
 
 	return false
