@@ -10,6 +10,7 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/zc310/headers"
 	"log"
 	"strconv"
 	"strings"
@@ -28,21 +29,37 @@ var (
 //==============================接口实现===================================
 //========================================================================
 
-type FiveMovie struct{ Movie }
+type FiveMovie struct {
+	Movie
+	httpWrapper *util.HttpWrapper
+	btVerifyUrl string
+}
 
-func (x FiveMovie) ListByTag(tagName, page string) model.Pager {
+func (x *FiveMovie) Init(movie Movie) {
+	x.Movie = movie
+	if x.httpWrapper == nil {
+		x.httpWrapper = &util.HttpWrapper{}
+	}
+	x.httpWrapper.SetHeader(headers.Origin, fiveHost)
+	x.httpWrapper.SetHeader("authority", util.HandleHostname(fiveHost))
+	x.httpWrapper.SetHeader(headers.Referer, fiveHost)
+	x.httpWrapper.SetHeader(headers.UserAgent, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
+	x.httpWrapper.SetHeader(headers.AcceptEncoding, "br, deflate, gzip")
+}
+
+func (x *FiveMovie) ListByTag(tagName, page string) model.Pager {
 	return x.fiveListByTag(tagName, page)
 }
 
-func (x FiveMovie) Search(search, page string) model.Pager {
+func (x *FiveMovie) Search(search, page string) model.Pager {
 	return x.fiveListBySearch(search, page)
 }
 
-func (x FiveMovie) Detail(id string) model.MovieInfo {
+func (x *FiveMovie) Detail(id string) model.MovieInfo {
 	return x.fiveVideoDetail(id)
 }
 
-func (x FiveMovie) Source(sid, vid string) model.Video {
+func (x *FiveMovie) Source(sid, vid string) model.Video {
 	return x.fiveVideoSource(sid, vid)
 }
 
@@ -50,15 +67,23 @@ func (x FiveMovie) Source(sid, vid string) model.Video {
 //==============================实际业务处理逻辑============================
 //========================================================================
 
-func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
+func (x *FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 	_page, _ := strconv.Atoi(page)
 
 	var pager = model.Pager{}
 	pager.Limit = 16
 
+	// 还必须有这个多余动作，不然colly需要设置Host头
+	_, err := x.httpWrapper.Get(fmt.Sprintf(fiveTagUrl, _page))
+	if err != nil {
+		log.Println("[fiveListByTag.error]", err.Error())
+		return pager
+	}
+
 	c := x.Movie.NewColly()
 
 	c.OnHTML(".tab-list .module-items a", func(element *colly.HTMLElement) {
+
 		name := element.ChildText(".module-poster-item-title")
 		url := element.Attr("href")
 		thumb := element.ChildAttr("img.lazy", "data-original")
@@ -93,6 +118,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
+		request.Headers.Set("Host", util.HandleHostname(fiveHost))
 	})
 	c.OnResponse(func(response *colly.Response) {
 		if newResp := isWaf(string(response.Body)); newResp != nil {
@@ -100,7 +126,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 		}
 	})
 
-	err := c.Visit(fmt.Sprintf(fiveTagUrl, _page))
+	err = c.Visit(fmt.Sprintf(fiveTagUrl, _page))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
@@ -108,7 +134,7 @@ func (x FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 	return pager
 }
 
-func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
+func (x *FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	var requestUrl = fmt.Sprintf(fiveSearchUrl, query, util.HandlePageNumber(page))
 	var pager = model.Pager{}
 	pager.Limit = 16
@@ -162,7 +188,7 @@ func (x FiveMovie) fiveListBySearch(query, page string) model.Pager {
 	return pager
 }
 
-func (x FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
+func (x *FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{Id: id}
 	var idxList = make([][]string, 0)
 
@@ -214,7 +240,7 @@ func (x FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
+func (x *FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
 	video.Source = x.fiveParseVideoUrl(fmt.Sprintf(fivePlayUrl, sid))
@@ -227,13 +253,13 @@ func (x FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	return video
 }
 
-func (x FiveMovie) handleVideoType(v model.Video) model.Video {
+func (x *FiveMovie) handleVideoType(v model.Video) model.Video {
 	v.Type = "hls"
 	return v
 }
 
 // 筛选网络请求，找到特定地址（可能是播放地址）返回
-func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
+func (x *FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 	var findUrl string
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -283,7 +309,7 @@ func (x FiveMovie) fiveParseVideoUrl(requestUrl string) string {
 }
 
 // 认证页面模拟点击一下
-func (x FiveMovie) fiveGuardClick(requestUrl string) string {
+func (x *FiveMovie) fiveGuardClick(requestUrl string) string {
 	var findUrl string
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -335,7 +361,7 @@ func (x FiveMovie) fiveGuardClick(requestUrl string) string {
 	return findUrl
 }
 
-func (x FiveMovie) checkFiveWaf(requestUrl string, responseBody []byte) []byte {
+func (x *FiveMovie) checkFiveWaf(requestUrl string, responseBody []byte) []byte {
 	// <script src="/_guard/html.js?js=click_html"></script>
 	if !bytes.Contains(responseBody, []byte("_guard/html.js?js=click_html")) {
 		return responseBody
