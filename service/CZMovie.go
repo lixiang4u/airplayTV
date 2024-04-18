@@ -335,14 +335,13 @@ func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	if err != nil {
 		return video, errors.New("解密失败")
 	}
-	tmpList = strings.Split(string(bs), "window")
-	if len(tmpList) < 1 {
-		return video, errors.New("解密数据错误")
-	}
+	//tmpList = strings.Split(string(bs), "window")
+	//if len(tmpList) < 1 {
+	//	return video, errors.New("解密数据错误")
+	//}
 
-	regex := regexp.MustCompile(`{url: "(\S+)",type:"(\S+)",([\S\s]*)pic:'(\S+)'}`)
-	matchList := regex.FindStringSubmatch(tmpList[0])
-
+	regex := regexp.MustCompile(`video: {url: "(\S+?)",`)
+	matchList := regex.FindStringSubmatch(string(bs))
 	if len(matchList) < 1 {
 		return video, errors.New("解析视频信息失败")
 	}
