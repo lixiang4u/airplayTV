@@ -369,6 +369,10 @@ func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 	if util.CheckVideoUrl(video.Source) {
 		video.Url = video.Source
 	} else {
+		// 可能是m3u8，不返回hls就异常了，返回auto也不行啊
+		if len(video.Type) == 0 {
+			video.Type = "hls"
+		}
 		video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
 	}
 
