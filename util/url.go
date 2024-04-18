@@ -105,6 +105,12 @@ func CheckVideoUrl(url string) bool {
 	v, ok := headers["Content-Type"]
 	if ok {
 		for _, s := range v {
+			// 有可能返回m3u8文件还是Accept-Ranges=bytes的情况
+			if s == "application/vnd.apple.mpegurl" {
+				return false
+			}
+		}
+		for _, s := range v {
 			if s == "video/mp4" {
 				return true
 			}
