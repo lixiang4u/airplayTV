@@ -29,7 +29,7 @@ import (
 var (
 	czHost      = "https://www.czzy88.com"
 	czTagUrl    = "https://www.czzy88.com/%s/movie_bt_series/dyy/page/%d"
-	czSearchUrl = "https://www.cz233.com/xsseanmch?q=%s&f=_all&p=%d"
+	czSearchUrl = "https://www.cz233.com/xsssbeanmch?q=%s&f=_all&p=%d"
 	czDetailUrl = "https://www.czzy88.com/movie/%s.html"
 	czPlayUrl   = "https://www.czzy88.com/v_play/%s.html"
 )
