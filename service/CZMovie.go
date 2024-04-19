@@ -721,6 +721,7 @@ func (x *CZMovie) parseNetworkMediaUrl(requestUrl string) string {
 }
 
 func (x *CZMovie) parseEncryptedJsToUrl(result_v2 string) string {
+	// htoStr
 	var chars = strings.Split(result_v2, "")
 	slices.Reverse(chars)
 	var sb = strings.Builder{}
@@ -736,5 +737,10 @@ func (x *CZMovie) parseEncryptedJsToUrl(result_v2 string) string {
 		}
 		sb.Write(buf)
 	}
-	return sb.String()
+
+	// decodeStr
+	var tmpUrl = sb.String()
+	var tmpA = (len(tmpUrl) - 7) / 2
+
+	return fmt.Sprintf("%s%s", tmpUrl[0:tmpA], tmpUrl[tmpA+7:])
 }
