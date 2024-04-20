@@ -61,7 +61,7 @@ func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 		tag := element.ChildText(".pic-text")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    fmt.Sprintf("%d", util.ParseNumber(tmpUrl)),
+			Id:    util.SimpleRegEx(tmpUrl, `(\d+)`),
 			Name:  name,
 			Thumb: thumb,
 			Url:   util.FillUrlHost(tmpUrl, nnHost),
@@ -120,7 +120,7 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 		tag := element.ChildText(".pic-text")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    fmt.Sprintf("%d", util.ParseNumber(tmpUrl)),
+			Id:    util.SimpleRegEx(tmpUrl, `(\d+)`),
 			Name:  name,
 			Thumb: util.FillUrlHost(thumb, nnHost),
 			Url:   util.FillUrlHost(tmpUrl, nnHost),
@@ -161,9 +161,9 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 // 根据id获取视频播放列表信息
 func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{Id: id}
+	var sourceMap = make(map[string]string, 0)
 
 	c := x.Movie.NewColly()
-
 	c.OnHTML(".myui-content__thumb", func(element *colly.HTMLElement) {
 		info.Thumb = util.FillUrlHost(element.ChildAttr("a", "data-original"), nnHost)
 		info.Name = element.ChildAttr("a", "title")
@@ -172,20 +172,23 @@ func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 		info.Intro = element.Attr("content")
 	})
 	c.OnHTML(".myui-panel_hd .nav-tabs", func(element *colly.HTMLElement) {
-		// 播放地址
 		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
-			log.Println("=========>[playList]", element.Attr("href"), element.Text)
+			sourceMap[strings.TrimLeft(element.Attr("href"), "#")] = element.Text
 		})
 	})
 	c.OnHTML(".tab-content", func(element *colly.HTMLElement) {
-		log.Println("====+++")
 		element.ForEach(".tab-pane", func(groupIndex int, element *colly.HTMLElement) {
+			var sourceId = element.Attr("id")
+			groupName, ok := sourceMap[sourceId]
+			if !ok {
+				groupName = fmt.Sprintf("来源%d", groupIndex+1)
+			}
 			element.ForEach("li a", func(i int, element *colly.HTMLElement) {
 				info.Links = append(info.Links, model.Link{
-					Id:    element.Attr("href"),
+					Id:    util.SimpleRegEx(element.Attr("href"), `(\d+-\d+-\d+)`),
 					Name:  element.Text,
 					Url:   util.FillUrlHost(element.Attr("href"), nnHost),
-					Group: fmt.Sprintf("来源%d", groupIndex+1),
+					Group: groupName,
 				})
 			})
 		})

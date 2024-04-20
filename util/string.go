@@ -46,20 +46,12 @@ func IsTv(ua string) bool {
 	return strings.Contains(ua, "BRAVIA")
 }
 
-func ParseNumber(tmpUrl string, pos ...int) int64 {
-	if len(pos) == 0 {
-		pos = []int{1}
+func SimpleRegEx(plainText, regex string) string {
+	//regEx := regexp.MustCompile(`(\d+)`)
+	regEx := regexp.MustCompile(regex)
+	tmpList := regEx.FindStringSubmatch(plainText)
+	if len(tmpList) < 2 {
+		return ""
 	}
-	if pos[0] < 1 {
-		pos[0] = 1
-	}
-
-	regEx := regexp.MustCompile(`(\d+)`)
-	tmpList := regEx.FindStringSubmatch(tmpUrl)
-
-	if len(tmpList) < pos[0] {
-		return 0
-	}
-	n, _ := strconv.ParseInt(tmpList[pos[0]-1], 10, 64)
-	return n
+	return tmpList[1]
 }
