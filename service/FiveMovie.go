@@ -19,7 +19,7 @@ import (
 
 var (
 	fiveHost      = "https://555movie.me"
-	fiveTagUrl    = "https://555movie.me/label/netflix/page/%d.html"
+	fiveTagUrl    = "https://555movie.me/vodshow/1--------%d---.html"
 	fiveSearchUrl = "https://555movie.me/vodsearch/%s----------%d---.html"
 	fiveDetailUrl = "https://555movie.me/voddetail/%s.html"
 	fivePlayUrl   = "https://555movie.me/vodplay/%s.html"
@@ -41,10 +41,8 @@ func (x *FiveMovie) Init(movie Movie) {
 		x.httpWrapper = &util.HttpWrapper{}
 	}
 	x.httpWrapper.SetHeader(headers.Origin, fiveHost)
-	x.httpWrapper.SetHeader("authority", util.HandleHostname(fiveHost))
-	x.httpWrapper.SetHeader(headers.Referer, fiveHost)
+	x.httpWrapper.SetHeader("Host", util.HandleHostname(fiveHost))
 	x.httpWrapper.SetHeader(headers.UserAgent, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
-	x.httpWrapper.SetHeader(headers.AcceptEncoding, "br, deflate, gzip")
 }
 
 func (x *FiveMovie) ListByTag(tagName, page string) model.Pager {
@@ -68,7 +66,7 @@ func (x *FiveMovie) Source(sid, vid string) model.Video {
 //========================================================================
 
 func (x *FiveMovie) fiveListByTag(tagName, page string) model.Pager {
-	_page, _ := strconv.Atoi(page)
+	_page := util.HandlePageNumber(page)
 
 	var pager = model.Pager{}
 	pager.Limit = 16
@@ -82,7 +80,7 @@ func (x *FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 
 	c := x.Movie.NewColly()
 
-	c.OnHTML(".tab-list .module-items a", func(element *colly.HTMLElement) {
+	c.OnHTML(".module-items a.module-item", func(element *colly.HTMLElement) {
 
 		name := element.ChildText(".module-poster-item-title")
 		url := element.Attr("href")
