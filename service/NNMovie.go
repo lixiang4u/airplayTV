@@ -217,7 +217,7 @@ func (x NNMovie) nnVideoSource(sid, vid string) model.Video {
 	c.OnHTML(".embed-responsive", func(element *colly.HTMLElement) {
 		video.Source = util.SimpleRegEx(element.Text, `"url":"(\S+?)",`)
 		video.Source = strings.ReplaceAll(video.Source, "\\/", "/")
-		video.Type = util.GuessVideoType(video.Url)
+		video.Type = util.GuessVideoType(video.Source)
 
 		video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 	})
