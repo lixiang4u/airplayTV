@@ -27,5 +27,9 @@ func GuessVideoType(tmpUrl string) string {
 	if strings.HasSuffix(tmpUrl, ".m3u8") {
 		t = "hls" //m3u8 都是hls ???
 	}
+	if strings.Contains(tmpUrl, "m3u8") {
+		t = "hls" // https://t02.cz01.org/play/db64Kjc_bEupHVpe6kYgihH8QSZ8hARNT9aZ34FXoyoZFuoYqU6-DPachsx5lpmd4Uvlz8FUTy02tUCP6fvXK1QKEj4huO3TcGFUry4BBZkYm_tQjQ/m3u8
+	}
+
 	return t
 }
