@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,7 +19,7 @@ import (
 var (
 	nnHost      = "https://www.huibangpaint.com/"
 	nnM3u8Url   = "https://nnyy.in/url.php"
-	nnPlayUrl   = "https://nnyy.in/%s.html"
+	nnPlayUrl   = "https://www.huibangpaint.com/vodplay/%s.html"
 	nnSearchUrl = "https://www.huibangpaint.com/vodsearch/%s----------%d---.html"
 	nnTagUrl    = "https://www.huibangpaint.com/vodtype/1-%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 	nnDetailUrl = "https://www.huibangpaint.com/voddetail/%s.html"
@@ -165,7 +164,7 @@ func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 
 	c := x.Movie.NewColly()
 	c.OnHTML(".myui-content__thumb", func(element *colly.HTMLElement) {
-		info.Thumb = util.FillUrlHost(element.ChildAttr("a", "data-original"), nnHost)
+		info.Thumb = util.FillUrlHost(element.ChildAttr("a img", "data-original"), nnHost)
 		info.Name = element.ChildAttr("a", "title")
 	})
 	c.OnHTML("meta[name=description]", func(element *colly.HTMLElement) {
@@ -206,46 +205,30 @@ func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
 	return info
 }
 
-// 使用chromedp直接请求页面关联的播放数据m3u8
-// 应该可以直接从chromedp拿到m3u8地址，但是没跑通，可以先拿到请求所需的所有上下文，然后http.Post拿数据
 func (x NNMovie) nnVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid}
 
-	vid = strings.ReplaceAll(vid, "-", "/")
-
 	//获取基础信息
 	c := x.Movie.NewColly()
+	c.OnHTML(".myui-player__data", func(element *colly.HTMLElement) {
+		video.Name = element.ChildText(".text-fff")
+		video.Thumb = ""
+	})
+	c.OnHTML(".embed-responsive", func(element *colly.HTMLElement) {
+		video.Source = util.SimpleRegEx(element.Text, `"url":"(\S+?)",`)
+		video.Source = strings.ReplaceAll(video.Source, "\\/", "/")
+		video.Type = util.GuessVideoType(video.Url)
 
-	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
-		video.Name = element.ChildText(".product-title")
-		video.Thumb = element.ChildAttr(".thumb", "src")
+		video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 	})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, vid))
+	err := c.Visit(fmt.Sprintf(nnPlayUrl, sid))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
-	}
-
-	// sign 值来源：(sign = parseInt("0x62AB43C9") + m3u8.length)
-	// 1、通过console.log=null;让js报错，
-	// 2、进入movie.js的VM代码(因为底层循环了console.log()和console.clear()，所以可以直接查看到解码后到js源文件)
-	// 3、定位到"url.php"(解析m3u8的XMLHttpRequest请求)
-	// 4、往上找到sign参数的组成方式
-
-	var v = url.Values{}
-	v.Add("url", sid)
-	v.Add("sign", strconv.FormatUint(1655391177+uint64(len(sid)), 10))
-
-	_ = handleNNVideoUrl(v.Encode(), &video.Source)
-	video.Type = "hls" // m3u8 都是hls ???
-
-	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
-	if strings.HasSuffix(video.Url, ".mp4") {
-		video.Type = "auto"
 	}
 
 	return video
