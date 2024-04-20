@@ -268,6 +268,7 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 		} else {
 			// 直接可以拿到播放信息，或者需要解析加密的js数据得到信息
 			video.Source, video.Type = x.getFrameUrlContents(iframeUrl)
+			video.Source = util.FillUrlHost(video.Source, util.HandleHost(iframeUrl))
 			if video.Source != "" {
 				if util.CheckVideoUrl(video.Source) {
 					video.Url = video.Source
@@ -429,8 +430,8 @@ func (x *CZMovie) getFrameUrlContents(frameUrl string) (sourceUrl, videoType str
 				log.Println("[iframe播放信息解析失败2]", err.Error())
 			} else {
 				var result = gjson.ParseBytes(buf)
-				videoType = result.Get("vodtype").String()
 				sourceUrl = result.Get("url").String()
+				videoType = util.GuessVideoType(sourceUrl)
 			}
 		} else {
 			log.Println("[iframe播放信息解析失败2-2]", err.Error())
