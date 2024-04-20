@@ -18,11 +18,11 @@ import (
 )
 
 var (
-	nnHost      = "https://nnyy.in/"
+	nnHost      = "https://www.huibangpaint.com/"
 	nnM3u8Url   = "https://nnyy.in/url.php"
 	nnPlayUrl   = "https://nnyy.in/%s.html"
 	nnSearchUrl = "https://nnyy.in/so/%s-%s-%d-.html"
-	nnTagUrl    = "https://nnyy.in/%s/index_%d.html" //https://www.nunuyy2.org/dianying/index_3.html
+	nnTagUrl    = "https://www.huibangpaint.com/vodtype/1-%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 )
 
 type NNMovie struct{ Movie }
@@ -112,11 +112,11 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 
 	c := x.Movie.NewColly()
 
-	c.OnHTML(".lists-content ul li", func(element *colly.HTMLElement) {
-		name := element.ChildText("h2 a")
-		tmpUrl := element.ChildAttr("a.thumbnail", "href")
-		thumb := element.ChildAttr("img.thumb", "data-src")
-		tag := element.ChildText(".note")
+	c.OnHTML("ul.myui-vodlist .myui-vodlist__box", func(element *colly.HTMLElement) {
+		name := element.ChildAttr("a.myui-vodlist__thumb", "title")
+		tmpUrl := element.ChildAttr("a.myui-vodlist__thumb", "href")
+		thumb := element.ChildAttr("a.myui-vodlist__thumb", "data-original")
+		tag := element.ChildText(".pic-text")
 
 		pager.List = append(pager.List, model.MovieInfo{
 			Id:    nnHandleUrlToId(tmpUrl),
@@ -131,26 +131,24 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	regEx := regexp.MustCompile(`index_(\d+).html`)
+	regEx := regexp.MustCompile(`/vodtype/(\d+)-(\d+).html`)
 
-	c.OnHTML(".pagination", func(element *colly.HTMLElement) {
-		currentPageText := element.ChildText(".active span")
+	c.OnHTML(".myui-page", func(element *colly.HTMLElement) {
 		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
 			tmpList := regEx.FindStringSubmatch(element.Attr("href"))
-			if len(tmpList) != 2 {
+			if len(tmpList) != 3 {
 				return
 			}
-			n, _ := strconv.Atoi(tmpList[1])
+			n, _ := strconv.Atoi(tmpList[2])
 			if n > pager.Total {
 				pager.Total = n
 			}
 		})
 
-		pager.Current, _ = strconv.Atoi(currentPageText)
+		pager.Current, _ = strconv.Atoi(page)
 	})
 
-	tmpUrl := fmt.Sprintf(nnTagUrl, tagName, util.HandlePageNumber(page))
-	tmpUrl = strings.ReplaceAll(tmpUrl, "index_1.html", "")
+	tmpUrl := fmt.Sprintf(nnTagUrl, util.HandlePageNumber(page))
 	err := c.Visit(tmpUrl)
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
