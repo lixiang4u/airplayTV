@@ -23,6 +23,7 @@ var (
 	nnPlayUrl   = "https://nnyy.in/%s.html"
 	nnSearchUrl = "https://www.huibangpaint.com/vodsearch/%s----------%d---.html"
 	nnTagUrl    = "https://www.huibangpaint.com/vodtype/1-%d.html" //https://www.nunuyy2.org/dianying/index_3.html
+	nnDetailUrl = "https://www.huibangpaint.com/voddetail/%s.html"
 )
 
 type NNMovie struct{ Movie }
@@ -159,37 +160,44 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 
 // 根据id获取视频播放列表信息
 func (x NNMovie) nnVideoDetail(id string) model.MovieInfo {
-	var info = model.MovieInfo{}
-
-	// dianying-71677 | zongyi-71677
-	tmpList := strings.Split(id, "-")
-	idPathUrl := strings.Join(tmpList, "/")
-	if len(tmpList) != 2 {
-		return info
-	}
-
-	info.Id = id
+	var info = model.MovieInfo{Id: id}
 
 	c := x.Movie.NewColly()
 
-	c.OnHTML(".product-header", func(element *colly.HTMLElement) {
-		info.Thumb = handleNNImageUrl(element.ChildAttr(".thumb", "src"))
-		info.Name = element.ChildText(".product-title")
-		info.Intro = element.ChildText(".product-excerpt span")
+	c.OnHTML(".myui-content__thumb", func(element *colly.HTMLElement) {
+		info.Thumb = util.FillUrlHost(element.ChildAttr("a", "data-original"), nnHost)
+		info.Name = element.ChildAttr("a", "title")
+	})
+	c.OnHTML("meta[name=description]", func(element *colly.HTMLElement) {
+		info.Intro = element.Attr("content")
+	})
+	c.OnHTML(".myui-panel_hd .nav-tabs", func(element *colly.HTMLElement) {
+		// 播放地址
+		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
+			log.Println("=========>[playList]", element.Attr("href"), element.Text)
+		})
+	})
+	c.OnHTML(".tab-content", func(element *colly.HTMLElement) {
+		log.Println("====+++")
+		element.ForEach(".tab-pane", func(groupIndex int, element *colly.HTMLElement) {
+			element.ForEach("li a", func(i int, element *colly.HTMLElement) {
+				info.Links = append(info.Links, model.Link{
+					Id:    element.Attr("href"),
+					Name:  element.Text,
+					Url:   util.FillUrlHost(element.Attr("href"), nnHost),
+					Group: fmt.Sprintf("来源%d", groupIndex+1),
+				})
+			})
+		})
 	})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL.String())
 	})
 
-	err := c.Visit(fmt.Sprintf(nnPlayUrl, idPathUrl))
+	err := c.Visit(fmt.Sprintf(nnDetailUrl, id))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
-	}
-	links, err := handleNNVideoPlayLinks(idPathUrl)
-
-	if err == nil {
-		info.Links = links
 	}
 
 	return info
