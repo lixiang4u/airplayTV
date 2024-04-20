@@ -21,7 +21,7 @@ var (
 	nnHost      = "https://www.huibangpaint.com/"
 	nnM3u8Url   = "https://nnyy.in/url.php"
 	nnPlayUrl   = "https://nnyy.in/%s.html"
-	nnSearchUrl = "https://nnyy.in/so/%s-%s-%d-.html"
+	nnSearchUrl = "https://www.huibangpaint.com/vodsearch/%s----------%d---.html"
 	nnTagUrl    = "https://www.huibangpaint.com/vodtype/1-%d.html" //https://www.nunuyy2.org/dianying/index_3.html
 )
 
@@ -49,21 +49,21 @@ func (x NNMovie) Source(sid, vid string) model.Video {
 
 func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{}
-	pager.Limit = 24 // 每页24条
+	pager.Limit = 10 // 每页10条
 
 	c := x.Movie.NewColly()
 
-	c.OnHTML(".lists-content li", func(element *colly.HTMLElement) {
-		name := element.ChildText("h2 a")
-		tmpUrl := element.ChildAttr("a.thumbnail", "href")
-		thumb := element.ChildAttr("img.thumb", "src")
-		tag := element.ChildText(".note")
+	c.OnHTML("#searchList .thumb", func(element *colly.HTMLElement) {
+		name := element.ChildAttr("a", "title")
+		tmpUrl := element.ChildAttr("a", "href")
+		thumb := element.ChildAttr("a", "data-original")
+		tag := element.ChildText(".pic-text")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    nnHandleUrlToId(tmpUrl),
+			Id:    fmt.Sprintf("%d", util.ParseNumber(tmpUrl)),
 			Name:  name,
 			Thumb: thumb,
-			Url:   tmpUrl,
+			Url:   util.FillUrlHost(tmpUrl, nnHost),
 			Tag:   tag,
 		})
 	})
@@ -98,7 +98,7 @@ func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 		pager.Current, _ = strconv.Atoi(currentPageText)
 	})
 
-	err := c.Visit(fmt.Sprintf(nnSearchUrl, search, search, handleNNPageNumber(page)))
+	err := c.Visit(fmt.Sprintf(nnSearchUrl, search, handleNNPageNumber(page)))
 	if err != nil {
 		log.Println("[visit.error]", err.Error())
 	}
@@ -108,7 +108,7 @@ func (x NNMovie) nnListBySearch(search, page string) model.Pager {
 
 func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
-	pager.Limit = 24 // 每页24条
+	pager.Limit = 48 // 每页48条
 
 	c := x.Movie.NewColly()
 
@@ -119,10 +119,10 @@ func (x NNMovie) nnListByTag(tagName, page string) model.Pager {
 		tag := element.ChildText(".pic-text")
 
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    nnHandleUrlToId(tmpUrl),
+			Id:    fmt.Sprintf("%d", util.ParseNumber(tmpUrl)),
 			Name:  name,
 			Thumb: util.FillUrlHost(thumb, nnHost),
-			Url:   tmpUrl,
+			Url:   util.FillUrlHost(tmpUrl, nnHost),
 			Tag:   tag,
 		})
 	})
