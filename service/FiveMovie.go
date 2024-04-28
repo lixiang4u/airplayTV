@@ -4,6 +4,7 @@ import "C"
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Danny-Dasilva/CycleTLS/cycletls"
 	"github.com/chromedp/cdproto/network"
@@ -12,8 +13,10 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -246,7 +249,13 @@ func (x *FiveMovie) fiveVideoDetail(id string) model.MovieInfo {
 func (x *FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
-	video.Source = x.fiveParseVideoUrl(fmt.Sprintf(fivePlayUrl, sid))
+	//video.Source = x.fiveParseVideoUrl(fmt.Sprintf(fivePlayUrl, sid))
+	var err error
+	video.Source, err = x.fiveDecryptVideoUrl(sid)
+	if err != nil {
+		log.Println("[fiveDecryptVideoUrlError]", sid, err.Error())
+		return video
+	}
 
 	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
 
@@ -254,6 +263,51 @@ func (x *FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 	video = x.handleVideoType(video)
 
 	return video
+}
+
+func (x *FiveMovie) fiveDecryptVideoUrl(sid string) (string, error) {
+	buf, err := x.httpWrapper.Get(fmt.Sprintf(fivePlayUrl, sid))
+	if err != nil {
+		return "", err
+	}
+	var findStr = util.SimpleRegEx(string(buf), `"url":"(\S+?)","url_next"`)
+
+	// 文件：https://3d-platform-pro.obs.cn-south-1.myhuaweicloud.com/ecfb29bec27c79ff4fc9f94a20be3e10.min
+	// 方法：[_0x2f76de(0x165,']^%c')](_0x1ddfea,_0x85c5d,_0x25553c)
+	// 在以上文件方法种即可追踪到 CryptoJS 加密的相关参数
+	data, err := x.fuckCryptoEncode("a67e9a3a85049339", "86ad9b37cc9f5b9501b3cecc7dc6377c", findStr)
+	if err != nil {
+		return "", err
+	}
+
+	var iframeUrl = "util.SimpleRegEx(string(buf), `<iframe id=\"play_iframe\" border=\"0\" src=\"(\\S+?)\" width=\"100%\"`)"
+
+	buf, err = x.httpWrapper.Get(fmt.Sprintf("%s?data=%s", x.getIframeApiUrl(iframeUrl), url.QueryEscape(data)))
+	if err != nil {
+		return "", err
+	}
+	//log.Println("[RepBuff]", string(buf))
+
+	// 解密入口：[_0x2f76de(0x3f2,'lA0#')](_0x18e43b,_0x22739d,_0x3780eb)
+	// 需要将该方法转为可读JS，然后使用goja桥接
+	resp, err := x.fuckCryptoJSDecode("a67e9a3a85049339", "86ad9b37cc9f5b9501b3cecc7dc6377c", string(buf))
+	if err != nil {
+		return "", err
+	}
+
+	var result = gjson.Parse(resp)
+
+	if !result.Get("data.url").Exists() {
+		return "", errors.New("解析JSON失败：" + resp)
+	}
+
+	return result.Get("data.url").String(), nil
+}
+
+func (x *FiveMovie) getIframeApiUrl(requestUrl string) string {
+	log.Println("[IframeRequestUrl]", requestUrl)
+	var apiUrl = "https://player.ddzyku.com:3653/get_url_v2"
+	return apiUrl
 }
 
 func (x *FiveMovie) handleVideoType(v model.Video) model.Video {
@@ -375,7 +429,7 @@ func (x *FiveMovie) checkFiveWaf(requestUrl string, responseBody []byte) []byte 
 	return nil
 }
 
-func (x *FiveMovie) fuckCryptoJS(key, iv, data string) (string, error) {
+func (x *FiveMovie) fuckCryptoEncode(key, iv, data string) (string, error) {
 	var scriptBuff = append(
 		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/crypto-js.min.js")),
 		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/fuck-crypto-bridge.js"))...,
@@ -387,14 +441,38 @@ func (x *FiveMovie) fuckCryptoJS(key, iv, data string) (string, error) {
 		return "", err
 	}
 
-	var fuckCrypto func(key, iv, data string) string
-	err = vm.ExportTo(vm.Get("fuckCrypto"), &fuckCrypto)
+	var fuckCryptoEncode func(key, iv, data string) string
+	err = vm.ExportTo(vm.Get("fuckCryptoEncode"), &fuckCryptoEncode)
 	if err != nil {
 		log.Println("[ExportGojaFnError]", err.Error())
 		return "", err
 	}
 
-	var result = fuckCrypto(key, iv, data)
+	var result = fuckCryptoEncode(key, iv, data)
+
+	return result, nil
+}
+
+func (x *FiveMovie) fuckCryptoJSDecode(key, iv, data string) (string, error) {
+	var scriptBuff = append(
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/crypto-js.min.js")),
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/fuck-crypto-bridge.js"))...,
+	)
+	vm := goja.New()
+	_, err := vm.RunString(string(scriptBuff))
+	if err != nil {
+		log.Println("[LoadGojaError]", err.Error())
+		return "", err
+	}
+
+	var fuckCryptoDecode func(key, iv, data string) string
+	err = vm.ExportTo(vm.Get("fuckCryptoDecode"), &fuckCryptoDecode)
+	if err != nil {
+		log.Println("[ExportGojaFnError]", err.Error())
+		return "", err
+	}
+
+	var result = fuckCryptoDecode(key, iv, data)
 
 	return result, nil
 }
