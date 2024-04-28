@@ -74,6 +74,8 @@ func (x *FiveMovie) fiveListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 16
 
+	//_, _ = x.JA3Request(fmt.Sprintf(fiveTagUrl, _page))
+
 	// 还必须有这个多余动作，不然colly需要设置Host头
 	_, err := x.httpWrapper.Get(fmt.Sprintf(fiveTagUrl, _page))
 	if err != nil {
@@ -397,10 +399,10 @@ func (x *FiveMovie) fuckCryptoJS(key, iv, data string) (string, error) {
 	return result, nil
 }
 
-func (x *FiveMovie) JA3Request(requestUrl string) {
+func (x *FiveMovie) JA3Request(requestUrl string) (cycletls.Response, error) {
 	// 竟然跳不过去！！！！！！！！
 	client := cycletls.Init()
-	response, err := client.Do("https://wu5tv.com/vodshow/1--------999999---.html", cycletls.Options{
+	response, err := client.Do(requestUrl, cycletls.Options{
 		//Body: "",
 		Ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-45-23-5-16-0-65037-51-18-13-43-10-35-17513-11-65281,25497-29-23-24,0",
 		//UserAgent: "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0",
@@ -416,7 +418,7 @@ func (x *FiveMovie) JA3Request(requestUrl string) {
 	}, "GET")
 
 	if err != nil {
-		log.Print("Request Failed: " + err.Error())
+		log.Print("[JA3RequestError]" + err.Error())
 	}
-	log.Println(response.Body)
+	return response, err
 }
