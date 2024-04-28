@@ -66,3 +66,8 @@ func FileReadAll(filename string) ([]byte, error) {
 	}
 	return io.ReadAll(fi)
 }
+
+func FileReadAllBuf(filename string) []byte {
+	buf, _ := FileReadAll(filename)
+	return buf
+}

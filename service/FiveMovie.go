@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/dop251/goja"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
 	"log"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -368,4 +370,28 @@ func (x *FiveMovie) checkFiveWaf(requestUrl string, responseBody []byte) []byte 
 	x.fiveGuardClick(requestUrl)
 
 	return nil
+}
+
+func (x *FiveMovie) fuckCryptoJS(key, iv, data string) (string, error) {
+	var scriptBuff = append(
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/crypto-js.min.js")),
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/fuck-crypto-bridge.js"))...,
+	)
+	vm := goja.New()
+	_, err := vm.RunString(string(scriptBuff))
+	if err != nil {
+		log.Println("[LoadGojaError]", err.Error())
+		return "", err
+	}
+
+	var fuckCrypto func(key, iv, data string) string
+	err = vm.ExportTo(vm.Get("fuckCrypto"), &fuckCrypto)
+	if err != nil {
+		log.Println("[ExportGojaFnError]", err.Error())
+		return "", err
+	}
+
+	var result = fuckCrypto(key, iv, data)
+
+	return result, nil
 }
