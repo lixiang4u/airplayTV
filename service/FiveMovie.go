@@ -479,6 +479,8 @@ func (x *FiveMovie) fuckCryptoJSDecode(key, iv, data string) (string, error) {
 
 func (x *FiveMovie) JA3Request(requestUrl string) (cycletls.Response, error) {
 	// 竟然跳不过去！！！！！！！！
+	// https://tls.peet.ws/api/all
+	// https://tls.browserleaks.com/json
 	client := cycletls.Init()
 	response, err := client.Do(requestUrl, cycletls.Options{
 		//Body: "",
