@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/Danny-Dasilva/CycleTLS/cycletls"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/dop251/goja"
@@ -394,4 +395,28 @@ func (x *FiveMovie) fuckCryptoJS(key, iv, data string) (string, error) {
 	var result = fuckCrypto(key, iv, data)
 
 	return result, nil
+}
+
+func (x *FiveMovie) JA3Request(requestUrl string) {
+	// 竟然跳不过去！！！！！！！！
+	client := cycletls.Init()
+	response, err := client.Do("https://wu5tv.com/vodshow/1--------999999---.html", cycletls.Options{
+		//Body: "",
+		Ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-45-23-5-16-0-65037-51-18-13-43-10-35-17513-11-65281,25497-29-23-24,0",
+		//UserAgent: "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0",
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+		Headers: map[string]string{
+			"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+			"Accept-Encoding": "gzip, deflate, br, zstd",
+			"Accept-Language": "zh,en-GB;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6",
+			"Cache-Control":   "no-cache",
+			"Connection":      "close",
+			"Host":            util.HandleHost(requestUrl),
+		},
+	}, "GET")
+
+	if err != nil {
+		log.Print("Request Failed: " + err.Error())
+	}
+	log.Println(response.Body)
 }
