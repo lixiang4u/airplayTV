@@ -9,16 +9,20 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/dengsgo/math-engine/engine"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -744,4 +748,131 @@ func (x *CZMovie) parseEncryptedJsToUrl(result_v2 string) string {
 	var tmpA = (len(tmpUrl) - 7) / 2
 
 	return fmt.Sprintf("%s%s", tmpUrl[0:tmpA], tmpUrl[tmpA+7:])
+}
+
+func (x *CZMovie) X(requestUrl string) string {
+	return x.fuckCfClearance(requestUrl)
+}
+
+func (x *CZMovie) fuckCfClearance(requestUrl string) string {
+	var findUrl string
+
+	allocCtx, allocCancel := chromedp.NewExecAllocator(
+		context.Background(),
+		chromedp.Flag("enable-automation", false),
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+	)
+	defer allocCancel()
+
+	ctx, ctxCancel := chromedp.NewContext(allocCtx)
+	defer ctxCancel()
+
+	// create a timeout as a safety net to prevent any infinite wait loops
+	ctx, timeoutCancel := context.WithTimeout(ctx, 20*time.Second)
+	defer timeoutCancel()
+
+	chromedp.ListenTarget(ctx, func(ev interface{}) {
+		switch ev := ev.(type) {
+		case *network.EventRequestWillBeSent:
+			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			//if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
+			//	ev.Request.URL = ""
+			//}
+		case *network.EventWebSocketCreated:
+			//log.Println("[network.EventWebSocketCreated]", ev.URL)
+		case *network.EventWebSocketFrameError:
+			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+		case *network.EventWebSocketFrameSent:
+			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
+		case *network.EventWebSocketFrameReceived:
+			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
+		case *network.EventResponseReceived:
+			log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+		case *runtime.EventConsoleAPICalled:
+			log.Println("[runtime.EventConsoleAPICalled]", ev.Type, util.ToJSON(ev.Args, true))
+			for _, arg := range ev.Args {
+				fmt.Printf("[EventConsoleAPICalled] %s - %s\n", arg.Type, arg.Value)
+			}
+
+		}
+	})
+
+	//var res []byte
+	//var html string
+	//var iframes []*cdp.Node
+	//log.Println("=========0")
+	//err := chromedp.Run(
+	//	ctx,
+	//	network.Enable(),
+	//	chromedp.Navigate(requestUrl),
+	//)
+	//if err != nil {
+	//	log.Println("[Error1]", err.Error())
+	//	return ""
+	//}
+	//log.Println("=========1")
+	//err = chromedp.Run(
+	//	ctx,
+	//	chromedp.WaitReady("iframe"),
+	//	chromedp.Nodes("iframe", &iframes, chromedp.ByQuery),
+	//	chromedp.ActionFunc(func(ctx context.Context) error {
+	//
+	//		log.Println("[iframes]", len(iframes))
+	//
+	//		return nil
+	//	}),
+	//)
+	//if err != nil {
+	//	log.Println("[Error2]", err.Error())
+	//	return ""
+	//}
+	//log.Println("=========2")
+	//err = chromedp.Run(
+	//	ctx,
+	//	chromedp.ActionFunc(func(ctx context.Context) error {
+	//		log.Println("[ActionFunc] 1")
+	//		log.Println("[ActionFunc]", util.ToJSON(iframes[0], true))
+	//		return nil
+	//	}),
+	//	chromedp.WaitReady(".main-wrapper", chromedp.ByQuery, chromedp.FromNode(iframes[0])),
+	//	//chromedp.WaitVisible("body", chromedp.ByQuery, chromedp.FromNode(iframes[0])),
+	//	//chromedp.InnerHTML(".ctp-label", &html),
+	//	chromedp.ActionFunc(func(ctx context.Context) error {
+	//		log.Println("[ActionFunc] 2")
+	//		return nil
+	//	}),
+	//
+	//	chromedp.InnerHTML(".main-wrapper", &html, chromedp.ByQuery),
+	//	chromedp.FullScreenshot(&res, 90),
+	//)
+
+	var html bool
+	var res []byte
+	err := chromedp.Run(
+		ctx,
+		// click 56，290
+		chromedp.EmulateViewport(880, 435),
+		chromedp.Tasks{
+			network.Enable(),
+			chromedp.Navigate(requestUrl),
+			chromedp.Sleep(time.Second * 3),
+			chromedp.Evaluate(`window.navigator.webdriver`, &html),
+			//chromedp.Evaluate(`document.querySelector('iframe').contentDocument.querySelector('.ctp-label')`, &html),
+			chromedp.MouseClickXY(56, 290),
+			chromedp.MouseClickXY(60, 290),
+			chromedp.Sleep(time.Second * 6),
+			chromedp.FullScreenshot(&res, 90),
+		},
+	)
+
+	log.Println("[html]", html)
+
+	if err != nil {
+		log.Println("[chromedp.Run.Error]", err.Error())
+	}
+	if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), res, fs.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	return findUrl
 }
