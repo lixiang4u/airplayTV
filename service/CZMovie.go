@@ -36,6 +36,7 @@ var (
 	czSearchUrl = "https://czzy.top/xsssbeanmch?q=%s&f=_all&p=%d"
 	czDetailUrl = "https://czzy.top/movie/%s.html"
 	czPlayUrl   = "https://czzy.top/v_play/%s.html"
+	ua          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
 //========================================================================
@@ -761,6 +762,7 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 		context.Background(),
 		chromedp.Flag("enable-automation", false),
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.UserAgent(ua),
 	)
 	defer allocCancel()
 
@@ -774,25 +776,31 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
 		switch ev := ev.(type) {
 		case *network.EventRequestWillBeSent:
-			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
 			//if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
 			//	ev.Request.URL = ""
 			//}
 		case *network.EventWebSocketCreated:
 			//log.Println("[network.EventWebSocketCreated]", ev.URL)
 		case *network.EventWebSocketFrameError:
-			//log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
+			log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
 		case *network.EventWebSocketFrameSent:
 			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
 		case *network.EventWebSocketFrameReceived:
 			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
 		case *network.EventResponseReceived:
-			log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+			//log.Println("[network.EventResponseReceived]", ev.Type, ev.Response.URL)
+			//if ev.Type == network.ResourceTypeDocument {
+			//	log.Println("[ev.Response.Headers]", ev.Response.URL, util.ToJSON(ev.Response.Headers, true))
+			//	network.GetResponseBody(ev.RequestID)
+			//}
+			//log.Println("[ev.Response.Headers]", ev.Response.URL, util.ToJSON(ev.Response.Headers, true))
+			//log.Println("[===============>Header]", util.ToJSON(ev.Response.Headers, true))
 		case *runtime.EventConsoleAPICalled:
-			log.Println("[runtime.EventConsoleAPICalled]", ev.Type, util.ToJSON(ev.Args, true))
-			for _, arg := range ev.Args {
-				fmt.Printf("[EventConsoleAPICalled] %s - %s\n", arg.Type, arg.Value)
-			}
+			//log.Println("[runtime.EventConsoleAPICalled]", ev.Type, util.ToJSON(ev.Args, true))
+			//for _, arg := range ev.Args {
+			//	fmt.Printf("[EventConsoleAPICalled] %s - %s\n", arg.Type, arg.Value)
+			//}
 
 		}
 	})
@@ -846,8 +854,9 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 	//	chromedp.FullScreenshot(&res, 90),
 	//)
 
-	var html bool
-	var res []byte
+	var isWebDriver bool
+	var screenshot []byte
+	var cookie string
 	err := chromedp.Run(
 		ctx,
 		// click 56，290
@@ -856,23 +865,43 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 			network.Enable(),
 			chromedp.Navigate(requestUrl),
 			chromedp.Sleep(time.Second * 3),
-			chromedp.Evaluate(`window.navigator.webdriver`, &html),
-			//chromedp.Evaluate(`document.querySelector('iframe').contentDocument.querySelector('.ctp-label')`, &html),
+			chromedp.Evaluate(`window.navigator.webdriver`, &isWebDriver),
 			chromedp.MouseClickXY(56, 290),
 			chromedp.MouseClickXY(60, 290),
-			chromedp.Sleep(time.Second * 6),
-			chromedp.FullScreenshot(&res, 90),
+			chromedp.WaitVisible(".mikd"),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				cookies, _ := network.GetAllCookies().Do(ctx)
+				cookie = x.parseCookie(cookies)
+				return nil
+			}),
+			chromedp.FullScreenshot(&screenshot, 90),
 		},
 	)
 
-	log.Println("[html]", html)
+	log.Println("[isWebDriver]", isWebDriver)
+	log.Println("[cookie]", cookie)
 
 	if err != nil {
 		log.Println("[chromedp.Run.Error]", err.Error())
 	}
-	if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), res, fs.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), screenshot, fs.ModePerm); err != nil {
 		log.Fatal(err)
 	}
 
 	return findUrl
+}
+
+func (x *CZMovie) parseCookie(cookies []*network.Cookie) string {
+	var cookieString = ""
+	if cookies == nil || len(cookies) <= 0 {
+		return cookieString
+	}
+	for _, cookie := range cookies {
+		if len(cookieString) <= 0 {
+			cookieString = fmt.Sprintf("%s=%s", cookie.Name, cookie.Value)
+		} else {
+			cookieString = fmt.Sprintf("%s; %s=%s", cookieString, cookie.Name, cookie.Value)
+		}
+	}
+	return cookieString
 }
