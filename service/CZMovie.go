@@ -36,7 +36,7 @@ var (
 	czSearchUrl = "https://czzy.top/xsssbeanmch?q=%s&f=_all&p=%d"
 	czDetailUrl = "https://czzy.top/movie/%s.html"
 	czPlayUrl   = "https://czzy.top/v_play/%s.html"
-	ua          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+	ua          = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 )
 
 //========================================================================
@@ -57,8 +57,7 @@ func (x *CZMovie) Init(movie Movie) {
 	x.httpWrapper.SetHeader(headers.Origin, czHost)
 	x.httpWrapper.SetHeader("authority", util.HandleHostname(czHost))
 	x.httpWrapper.SetHeader(headers.Referer, czHost)
-	x.httpWrapper.SetHeader(headers.UserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-	x.httpWrapper.SetHeader(headers.Cookie, "cf_clearance=H1K5QKqGOB2bBJe7WDsHtc3P__WHwLuXtdphezu1kA0-1714304712-1.0.1.1-swpI96XrqF_iD2zzM8SWCtuZ0dNtAZGI0aWJAM8F.Tvz6TAYmekFfzffMJLwC68TVCI11nK04VMbSzBPm6x5mw; myannoun=1")
+	x.httpWrapper.SetHeader(headers.UserAgent, ua)
 	x.httpWrapper.SetHeader(headers.AcceptEncoding, "br, deflate, gzip")
 }
 
