@@ -77,8 +77,13 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	//case "88":// 资源不行，有些都不能播放？？？
 	//	x.instant = service.EightMovie{}
 	//	break
+	case "ys":
+		_m := service.YSMovie{}
+		_m.Init(m)
+		x.instant = &_m
+		break
 	default:
-		_m := service.CZMovie{}
+		_m := service.YSMovie{}
 		_m.Init(m)
 		x.instant = &_m
 		//ctx.JSON(http.StatusOK, gin.H{"msg": "source not exists"})
