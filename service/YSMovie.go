@@ -205,8 +205,6 @@ func (x *YSMovie) ysVideoSource(sid, vid string) model.Video {
 
 	result.Get("data").Get("vod_sources").ForEach(func(key, value gjson.Result) bool {
 
-		log.Println("[vod_sources.key]", key)
-
 		if value.Get("source_id").String() == tmpSourceIdList[0] && value.Get("vod_play_list").Get("url_count").Int() > 0 {
 			value.Get("vod_play_list").Get("urls").ForEach(func(key, value gjson.Result) bool {
 
