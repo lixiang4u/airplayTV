@@ -175,7 +175,7 @@ func (x *YSMovie) ysVideoDetail(id string) model.MovieInfo {
 }
 
 func (x *YSMovie) ysVideoSource(sid, vid string) model.Video {
-	var video = model.Video{Id: vid}
+	var video = model.Video{Id: sid, Vid: vid}
 
 	log.Println("[sid]", sid)
 	log.Println("[vid]", vid)
