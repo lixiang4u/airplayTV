@@ -82,6 +82,11 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 		_m.Init(m)
 		x.instant = &_m
 		break
+	case "xk":
+		_m := service.XKMovie{}
+		_m.Init(m)
+		x.instant = &_m
+		break
 	default:
 		_m := service.YSMovie{}
 		_m.Init(m)

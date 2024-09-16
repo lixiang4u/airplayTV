@@ -55,3 +55,8 @@ func SimpleRegEx(plainText, regex string) string {
 	}
 	return tmpList[1]
 }
+
+func StringToInt(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
+}

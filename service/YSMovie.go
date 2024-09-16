@@ -211,7 +211,7 @@ func (x *YSMovie) ysVideoSource(sid, vid string) model.Video {
 				if tmpSourceIdList[1] == value.Get("nid").String() {
 					video.Url = value.Get("url").String()
 					video.Source = value.Get("url").String()
-					video.Type = "hls"
+					video.Type = util.GuessVideoType(video.Source)
 				}
 
 				return true
