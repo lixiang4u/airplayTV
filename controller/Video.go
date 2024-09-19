@@ -150,10 +150,15 @@ func (x VideoController) DetailV2(ctx *gin.Context) {
 }
 
 func (x VideoController) SourceV2(ctx *gin.Context) {
-	var id = ctx.Query("id")   // 播放id
-	var vid = ctx.Query("vid") // 视频id
+	var id = ctx.Query("id")        // 播放id
+	var vid = ctx.Query("vid")      // 视频id
+	var m3u8p = ctx.Query("_m3u8p") // 视频id
 
 	var data = x.getInstance(ctx).Source(id, vid)
+
+	if m3u8p == "true" {
+		data.Url = fmt.Sprintf("https://%s/api/m3u8p?q=%s", ctx.Request.Host, data.Url)
+	}
 
 	ctx.JSON(http.StatusOK, data)
 }
