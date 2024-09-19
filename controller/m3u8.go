@@ -10,9 +10,8 @@ import (
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
 	"io"
-	"log"
 	"net/http"
-	"os"
+	"strings"
 )
 
 type M3u8Controller struct {
@@ -33,26 +32,33 @@ func (x *M3u8Controller) handleQueryQ(q string) string {
 	}
 	return q
 }
+func (x *M3u8Controller) getRequestUrlF(ctx *gin.Context) string {
+	if ctx.Request.TLS != nil {
+		return fmt.Sprintf("https://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
+	} else {
+		return fmt.Sprintf("http://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
+	}
+}
 
 func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	var q = x.handleQueryQ(ctx.Query("q"))
 
 	if !util.IsHttpUrl(q) {
-		ctx.JSON(http.StatusOK, gin.H{"code": "500", "msg": "请求格式错误"})
+		ctx.String(http.StatusInternalServerError, "[error] 请求格式错误")
 		return
 	}
 
-	log.Println("[Query]", q)
+	//log.Println("[Query]", q)
 
 	resp, err := http.Head(q)
 	if err != nil {
-		ctx.JSON(http.StatusOK, gin.H{"code": "500", "msg": err.Error()})
+		ctx.String(http.StatusInternalServerError, fmt.Sprintf("[error] %s", err.Error()))
 		return
 	}
 	//defer func() { _ = resp.Body.Close() }()
 
 	var qContentType = resp.Header.Get(headers.ContentType)
-	log.Println("[qContentType]", qContentType)
+	//log.Println("[qContentType]", qContentType)
 
 	switch qContentType {
 	case "application/vnd.apple.mpegurl":
@@ -60,8 +66,13 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	case "audio/x-mpegurl":
 		fallthrough
 	case "video/vnd.mpegurl":
-		buf, _ := os.ReadFile("D:\\repo\\github.com\\lixiang4u\\airplayTV\\_debug\\1.m3u8")
-		playlist, err := x.handleM3u8Url(buf)
+		_, buf, err := x.httpWrapper.GetResponse(q)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, fmt.Sprintf("[error] %s", err.Error()))
+			return
+		}
+
+		playlist, err := x.handleM3u8Url(ctx, buf)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, "[error] %s", err.Error())
 			return
@@ -89,8 +100,8 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	}
 }
 
-func (x *M3u8Controller) handleM3u8Url(m3u8Buff []byte) (m3u8.Playlist, error) {
-	var proxyStreamUrl = "http://127.0.0.1:8099/api/m3u8p?q=%s"
+func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.Playlist, error) {
+	var proxyStreamUrl = x.getRequestUrlF(ctx)
 
 	playList, listType, err := m3u8.DecodeFrom(bytes.NewBuffer(m3u8Buff), true)
 	if err != nil {
