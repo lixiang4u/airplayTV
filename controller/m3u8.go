@@ -13,7 +13,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -91,6 +90,8 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		ctx.Header(headers.ContentDisposition, "inline; filename=playlist.m3u8")
 		_, _ = ctx.Writer.WriteString(playlist.String())
 		break
+	case "image/jpeg":
+		fallthrough
 	case "application/octet-stream":
 		req, err := http.NewRequest("GET", q, nil)
 		if err != nil {
@@ -138,7 +139,12 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.
 		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
-		fmt.Printf("[BBBBB] %+v\n", masterpl)
+		for idx, val := range masterpl.Variants {
+			if val == nil {
+				continue
+			}
+			masterpl.Variants[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
+		}
 	}
 
 	return playList, nil
