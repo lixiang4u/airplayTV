@@ -37,11 +37,7 @@ func (x *M3u8Controller) handleQueryQ(q string) string {
 }
 
 func (x *M3u8Controller) getRequestUrlF(ctx *gin.Context) string {
-	if ctx.Request.TLS != nil {
-		return fmt.Sprintf("https://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
-	} else {
-		return fmt.Sprintf("http://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
-	}
+	return fmt.Sprintf("https://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
 }
 
 func (x *M3u8Controller) Proxy(ctx *gin.Context) {
