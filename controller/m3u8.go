@@ -44,7 +44,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	var q = x.handleQueryQ(ctx.Query("q"))
 
 	if !util.IsHttpUrl(q) {
-		ctx.String(http.StatusInternalServerError, "[error] 请求格式错误")
+		ctx.String(http.StatusInternalServerError, "参数错误")
 		return
 	}
 
@@ -52,7 +52,9 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 
 	resp, err := http.Head(q)
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, fmt.Sprintf("[error] %s", err.Error()))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
 		return
 	}
 	//defer func() { _ = resp.Body.Close() }()
@@ -68,15 +70,20 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	case "video/vnd.mpegurl":
 		_, buf, err := x.httpWrapper.GetResponse(q)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, fmt.Sprintf("[error] %s", err.Error()))
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": err.Error(),
+			})
 			return
 		}
 
 		playlist, err := x.handleM3u8Url(ctx, buf)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, "[error] %s", err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": err.Error(),
+			})
 			return
 		}
+
 		ctx.Header(headers.ContentType, "application/vnd.apple.mpegurl")
 		ctx.Header(headers.ContentDisposition, "inline; filename=playlist.m3u8")
 		_, _ = ctx.Writer.WriteString(playlist.String())
@@ -84,18 +91,27 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	case "application/octet-stream":
 		req, err := http.NewRequest("GET", q, nil)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, "[error] %s", err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": err.Error(),
+			})
 			return
 		}
 		resp2, err := http.DefaultClient.Do(req)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, "[error] %s", err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": err.Error(),
+			})
 			return
 		}
 		defer func() { _ = resp2.Body.Close() }()
 
 		ctx.Header(headers.ContentType, qContentType)
 		_, _ = io.Copy(ctx.Writer, resp2.Body)
+		break
+	default:
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "无法解析",
+		})
 		break
 	}
 }
