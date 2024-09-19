@@ -164,11 +164,13 @@ func (x VideoController) Airplay(ctx *gin.Context) {
 	var vid = ctx.Query("vid")            // 视频id
 	var clientId = ctx.Query("client_id") // 客户端id
 	var source = ctx.Query("_source")     // 投射需要该参数
+	var m3u8p = ctx.Query("_m3u8p")       //
 
 	var d = gin.H{
 		"event":     "play",
 		"client_id": clientId,
 		"_source":   source,
+		"_m3u8p":    m3u8p,
 		"video":     x.getInstance(ctx).Source(id, vid),
 		"timestamp": time.Now().Unix(),
 	}
