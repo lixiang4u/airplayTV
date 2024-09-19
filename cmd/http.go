@@ -90,6 +90,8 @@ func NewRouter() *gin.Engine {
 
 	homeController := new(controller.HomeController)
 	videoController := new(controller.VideoController)
+	m3u8Controller := new(controller.M3u8Controller)
+	m3u8Controller.Init()
 
 	r.GET("/", homeController.Index) // 默认首页
 
@@ -110,6 +112,7 @@ func NewRouter() *gin.Engine {
 	})
 
 	r.GET("/tesla/fullscreen", homeController.FullScreen)
+	r.GET("/api/m3u8p", m3u8Controller.Proxy)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
