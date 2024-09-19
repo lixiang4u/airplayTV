@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grafov/m3u8"
@@ -10,7 +11,9 @@ import (
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -27,11 +30,11 @@ func (x *M3u8Controller) Init() {
 
 func (x *M3u8Controller) handleQueryQ(q string) string {
 	if !util.IsHttpUrl(q) {
-		buf, _ := base64.StdEncoding.DecodeString(q)
-		q = string(buf)
+		q = x.base64DecodingX(q)
 	}
 	return q
 }
+
 func (x *M3u8Controller) getRequestUrlF(ctx *gin.Context) string {
 	if ctx.Request.TLS != nil {
 		return fmt.Sprintf("https://%s/%s?q=%%s", ctx.Request.Host, strings.TrimLeft(ctx.Request.URL.Path, "/"))
@@ -48,7 +51,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		return
 	}
 
-	//log.Println("[Query]", q)
+	log.Println("[Query]", q)
 
 	resp, err := http.Head(q)
 	if err != nil {
@@ -110,7 +113,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		break
 	default:
 		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": "无法解析",
+			"msg": fmt.Sprintf("无法解析(%s)", qContentType),
 		})
 		break
 	}
@@ -131,7 +134,7 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.
 			if val == nil {
 				continue
 			}
-			mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, base64.StdEncoding.EncodeToString([]byte(val.URI)))
+			mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
 		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
@@ -139,4 +142,31 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.
 	}
 
 	return playList, nil
+}
+
+func (x *M3u8Controller) base64EncodingX(q string) string {
+	return base64.StdEncoding.EncodeToString(
+		[]byte(util.ToJSON(
+			map[string]interface{}{"q": q},
+			false,
+		)),
+	)
+}
+
+func (x *M3u8Controller) base64DecodingX(q string) string {
+	if util.IsHttpUrl(q) {
+		return q
+	}
+	buf, err := base64.StdEncoding.DecodeString(q)
+	if err != nil {
+		return ""
+	}
+	var m map[string]interface{}
+	if err = json.Unmarshal(buf, &m); err != nil {
+		return ""
+	}
+	if v, ok := m["q"]; ok {
+		return v.(string)
+	}
+	return ""
 }
