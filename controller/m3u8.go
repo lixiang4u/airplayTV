@@ -182,6 +182,9 @@ func (x *M3u8Controller) base64DecodingX(q string) string {
 }
 
 func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
+	if util.IsHttpUrl(playUrl) {
+		return playUrl
+	}
 	playUrl = strings.TrimSpace(playUrl)
 	if strings.HasPrefix(playUrl, "/") {
 		parsedUrl, _ := url.Parse(m3u8Url)
