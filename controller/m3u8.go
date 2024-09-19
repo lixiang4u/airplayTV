@@ -13,6 +13,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"strings"
 )
 
@@ -61,11 +63,14 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	}
 	//defer func() { _ = resp.Body.Close() }()
 
-	var qContentType = resp.Header.Get(headers.ContentType)
-	//log.Println("[qContentType]", qContentType)
+	var qContentType = strings.ToLower(resp.Header.Get(headers.ContentType))
 
 	switch qContentType {
 	case "application/vnd.apple.mpegurl":
+		fallthrough
+	case "application/apple.vnd.mpegurl":
+		fallthrough
+	case "application/x-mpegurl":
 		fallthrough
 	case "audio/x-mpegurl":
 		fallthrough
@@ -77,8 +82,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 			})
 			return
 		}
-
-		playlist, err := x.handleM3u8Url(ctx, buf)
+		playlist, err := x.handleM3u8Url(ctx, q, buf)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"msg": err.Error(),
@@ -90,7 +94,9 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		ctx.Header(headers.ContentDisposition, "inline; filename=playlist.m3u8")
 		_, _ = ctx.Writer.WriteString(playlist.String())
 		break
-	case "image/jpeg":
+	case "video/mp2t": // ts文件
+		fallthrough
+	case "image/jpeg": // 图像文件替代ts
 		fallthrough
 	case "application/octet-stream":
 		req, err := http.NewRequest("GET", q, nil)
@@ -120,7 +126,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	}
 }
 
-func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.Playlist, error) {
+func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buff []byte) (m3u8.Playlist, error) {
 	var proxyStreamUrl = x.getRequestUrlF(ctx)
 
 	playList, listType, err := m3u8.DecodeFrom(bytes.NewBuffer(m3u8Buff), true)
@@ -135,6 +141,7 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.
 			if val == nil {
 				continue
 			}
+			val.URI = x.handleM3u8PlayListUrl(val.URI, m3u8Url)
 			mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
 		}
 	case m3u8.MASTER:
@@ -143,6 +150,7 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Buff []byte) (m3u8.
 			if val == nil {
 				continue
 			}
+			val.URI = x.handleM3u8PlayListUrl(val.URI, m3u8Url)
 			masterpl.Variants[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
 		}
 	}
@@ -175,4 +183,15 @@ func (x *M3u8Controller) base64DecodingX(q string) string {
 		return v.(string)
 	}
 	return ""
+}
+
+func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
+	playUrl = strings.TrimSpace(playUrl)
+	if strings.HasPrefix(playUrl, "/") {
+		parsedUrl, _ := url.Parse(m3u8Url)
+		return fmt.Sprintf("%s://%s/%s", parsedUrl.Scheme, parsedUrl.Host, playUrl)
+	} else {
+		parsedUrl, _ := url.Parse(m3u8Url)
+		return fmt.Sprintf("%s://%s/%s/%s", parsedUrl.Scheme, parsedUrl.Host, strings.TrimLeft(filepath.Dir(parsedUrl.Path), "\\/"), playUrl)
+	}
 }
