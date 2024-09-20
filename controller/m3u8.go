@@ -15,7 +15,9 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
+	"time"
 )
 
 type M3u8Controller struct {
@@ -61,6 +63,19 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 
 	var qContentType = strings.ToLower(resp.Header.Get(headers.ContentType))
 
+	var playlist m3u8.Playlist
+	if slices.Contains([]int{502, 500}, resp.StatusCode) {
+		// 可能是禁止Head，需要GET一次
+		playlist, err = x.handleUrlToM3u8PlayList(ctx, q)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+		qContentType = "application/x-mpegurl"
+	}
+
 	switch qContentType {
 	case "application/vnd.apple.mpegurl":
 		fallthrough
@@ -71,48 +86,21 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 	case "audio/x-mpegurl":
 		fallthrough
 	case "video/vnd.mpegurl":
-		_, buf, err := x.httpWrapper.GetResponse(q)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"msg": err.Error(),
-			})
-			return
+		if playlist == nil {
+			playlist, err = x.handleUrlToM3u8PlayList(ctx, q)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+				return
+			}
 		}
-		playlist, err := x.handleM3u8Url(ctx, q, buf)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
-		ctx.Header(headers.ContentType, "application/vnd.apple.mpegurl")
-		ctx.Header(headers.ContentDisposition, "inline; filename=playlist.m3u8")
-		_, _ = ctx.Writer.WriteString(playlist.String())
+		x.handleResponseM3u8PlayList(ctx, playlist)
 		break
 	case "video/mp2t": // ts文件
 		fallthrough
 	case "image/jpeg": // 图像文件替代ts
 		fallthrough
 	case "application/octet-stream":
-		req, err := http.NewRequest("GET", q, nil)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-		resp2, err := http.DefaultClient.Do(req)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-		defer func() { _ = resp2.Body.Close() }()
-
-		ctx.Header(headers.ContentType, qContentType)
-		_, _ = io.Copy(ctx.Writer, resp2.Body)
+		x.handleM3u8Stream(ctx, q, qContentType)
 		break
 	default:
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -193,4 +181,43 @@ func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
 		parsedUrl, _ := url.Parse(m3u8Url)
 		return fmt.Sprintf("%s://%s/%s/%s", parsedUrl.Scheme, parsedUrl.Host, strings.TrimLeft(filepath.Dir(parsedUrl.Path), "\\/"), playUrl)
 	}
+}
+
+func (x *M3u8Controller) handleResponseM3u8PlayList(ctx *gin.Context, playlist m3u8.Playlist) {
+	ctx.Header(headers.ContentType, "application/vnd.apple.mpegurl")
+	ctx.Header(headers.ContentDisposition, fmt.Sprintf("inline; filename=playlist%d.m3u8", time.Now().Unix()))
+	_, _ = ctx.Writer.WriteString(playlist.String())
+}
+
+func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q, qContentType string) {
+	req, err := http.NewRequest("GET", q, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	resp2, err := http.DefaultClient.Do(req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	defer func() { _ = resp2.Body.Close() }()
+
+	ctx.Header(headers.ContentType, qContentType)
+	_, _ = io.Copy(ctx.Writer, resp2.Body)
+}
+
+func (x *M3u8Controller) handleUrlToM3u8PlayList(ctx *gin.Context, q string) (m3u8.Playlist, error) {
+	_, buf, err := x.httpWrapper.GetResponse(q)
+	if err != nil {
+		return nil, err
+	}
+	playlist, err := x.handleM3u8Url(ctx, q, buf)
+	if err != nil {
+		return nil, err
+	}
+	return playlist, nil
 }
