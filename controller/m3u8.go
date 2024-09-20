@@ -59,14 +59,12 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		return
 	}
 
-	var qContentType = strings.ToLower(resp.Header.Get(headers.ContentType))
-
 	if resp.StatusCode == 200 {
-		x.handleResponseContentType(ctx, q, qContentType)
+		x.handleResponseContentType(ctx, q, strings.ToLower(resp.Header.Get(headers.ContentType)))
 		return
 	} else {
 		// 可能是禁止Head，需要GET一次
-		x.handleM3u8Stream(ctx, q, qContentType)
+		x.handleM3u8Stream(ctx, q)
 	}
 }
 
@@ -164,7 +162,7 @@ func (x *M3u8Controller) handleResponseM3u8PlayList(ctx *gin.Context, q string, 
 	_, _ = ctx.Writer.WriteString(playlist.String())
 }
 
-func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q, qContentType string) {
+func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 	req, err := http.NewRequest("GET", q, nil)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
@@ -176,7 +174,10 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q, qContentType stri
 		return
 	}
 	defer func() { _ = resp2.Body.Close() }()
-	switch strings.ToLower(resp2.Header.Get(headers.ContentType)) {
+
+	var qContentType = strings.ToLower(resp2.Header.Get(headers.ContentType))
+
+	switch qContentType {
 	case "application/vnd.apple.mpegurl":
 		fallthrough
 	case "application/apple.vnd.mpegurl":
@@ -217,7 +218,7 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 	case "image/jpeg": // 图像文件替代ts
 		fallthrough
 	case "application/octet-stream":
-		x.handleM3u8Stream(ctx, q, qContentType)
+		x.handleM3u8Stream(ctx, q)
 		break
 	default:
 		ctx.JSON(http.StatusInternalServerError, gin.H{
