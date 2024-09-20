@@ -91,7 +91,7 @@ func (x *HttpWrapper) Post(requestUrl, rawBody string) ([]byte, error) {
 	return x.decodeEncoding(resp)
 }
 
-func (x *HttpWrapper) GetResponse(requestUrl string) (map[string][]string, []byte, error) {
+func (x *HttpWrapper) GetResponse(requestUrl string) (http.Header, []byte, error) {
 	req, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
 		return nil, nil, err
