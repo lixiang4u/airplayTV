@@ -158,6 +158,9 @@ func (x VideoController) SourceV2(ctx *gin.Context) {
 	var data = x.getInstance(ctx).Source(id, vid)
 
 	if m3u8p == "true" {
+		if !util.IsHttpUrl(data.Url) {
+			data.Url = fmt.Sprintf("https://%s/%s", ctx.Request.Host, strings.TrimLeft(data.Url, "/"))
+		}
 		data.Url = fmt.Sprintf("https://%s/api/m3u8p?q=%s", ctx.Request.Host, data.Url)
 	}
 
