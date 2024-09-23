@@ -14,10 +14,10 @@ var (
 	mydHost      = "https://myd04.com/"
 	mydImageHost = "https://www.mdzypic.com/"
 	mydTagUrl    = "https://myd04.com/vodshow/1--------%d---.html"
+	mydSearchUrl = "https://myd04.com/vodsearch/%s----------%d---.html"
+	mydDetailUrl = "https://myd04.com/voddetail/%s.html"
 	mydM3u8Url   = "https://nnyy.in/url.php"
 	mydPlayUrl   = "https://www.huibangpaint.com/vodplay/%s.html"
-	mydSearchUrl = "https://myd04.com/vodsearch/%s----------%d---.html"
-	mydDetailUrl = "https://www.huibangpaint.com/voddetail/%s.html"
 )
 
 type MYDMovie struct {
@@ -111,7 +111,7 @@ func (x *MYDMovie) _ListBySearch(search, page string) model.Pager {
 		tmpUrl, _ := selection.Find(".module-card-item-title a").Attr("href")
 		thumb, _ := selection.Find(".lazyload").Attr("data-original")
 		tag := selection.Find(".module-item-note").Text()
-		intro := selection.Find(".module-info-item-content").Text()
+		//intro := selection.Find(".module-info-item-content").Text()
 
 		pager.List = append(pager.List, model.MovieInfo{
 			Id:         util.SimpleRegEx(tmpUrl, `(\d+)`),
@@ -120,7 +120,7 @@ func (x *MYDMovie) _ListBySearch(search, page string) model.Pager {
 			Url:        util.FillUrlHost(tmpUrl, mydImageHost),
 			Tag:        tag,
 			Resolution: tag,
-			Intro:      strings.TrimSpace(intro),
+			//Intro:      strings.TrimSpace(intro),
 		})
 	})
 
@@ -132,45 +132,47 @@ func (x *MYDMovie) _VideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{Id: id}
 	//var sourceMap = make(map[string]string, 0)
 
-	//c := x.Movie.NewColly()
-	//c.OnHTML(".myui-content__thumb", func(element *colly.HTMLElement) {
-	//	info.Thumb = util.FillUrlHost(element.ChildAttr("a img", "data-original"), mydHost)
-	//	info.Name = element.ChildAttr("a", "title")
-	//})
-	//c.OnHTML("meta[name=description]", func(element *colly.HTMLElement) {
-	//	info.Intro = element.Attr("content")
-	//})
-	//c.OnHTML(".myui-panel_hd .nav-tabs", func(element *colly.HTMLElement) {
-	//	element.ForEach("li a", func(i int, element *colly.HTMLElement) {
-	//		sourceMap[strings.TrimLeft(element.Attr("href"), "#")] = element.Text
-	//	})
-	//})
-	//c.OnHTML(".tab-content", func(element *colly.HTMLElement) {
-	//	element.ForEach(".tab-pane", func(groupIndex int, element *colly.HTMLElement) {
-	//		var sourceId = element.Attr("id")
-	//		groupName, ok := sourceMap[sourceId]
-	//		if !ok {
-	//			groupName = fmt.Sprintf("来源%d", groupIndex+1)
-	//		}
-	//		element.ForEach("li a", func(i int, element *colly.HTMLElement) {
-	//			info.Links = append(info.Links, model.Link{
-	//				Id:    util.SimpleRegEx(element.Attr("href"), `(\d+-\d+-\d+)`),
-	//				Name:  element.Text,
-	//				Url:   util.FillUrlHost(element.Attr("href"), mydHost),
-	//				Group: groupName,
-	//			})
-	//		})
-	//	})
-	//})
-	//
-	//c.OnRequest(func(request *colly.Request) {
-	//	log.Println("Visiting", request.URL.String())
-	//})
-	//
-	//err := c.Visit(fmt.Sprintf(mydDetailUrl, id))
-	//if err != nil {
-	//	log.Println("[visit.error]", err.Error())
-	//}
+	b, err := x.httpWrapper.Get(fmt.Sprintf(mydDetailUrl, id))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return info
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return info
+	}
+
+	var tmpSelection = doc.Find(".module .module-main")
+	{
+		info.Id = id
+		info.Name = tmpSelection.Find(".module-info-heading h1").Text()
+		info.Intro = tmpSelection.Find(".module-info-introduction-content").Text()
+		info.Thumb, _ = tmpSelection.Find(".module-item-cover .lazyload").Attr("data-original")
+		//info.Actors = tmpSelection.Find(".module-info-item-title").Text()
+		info.Url = fmt.Sprintf(mydDetailUrl, id)
+
+		info.Intro = strings.TrimSpace(info.Intro)
+	}
+
+	var groupList = make([]string, 0)
+	doc.Find("#y-playList .tab-item").Each(func(i int, selection *goquery.Selection) {
+		tmpGroupName, _ := selection.Attr("data-dropdown-value")
+		groupList = append(groupList, tmpGroupName)
+	})
+	doc.Find(".module .module-list.his-tab-list").Each(func(i int, selection *goquery.Selection) {
+		var tmpGroup = groupList[i]
+		selection.Find(".module-play-list .module-play-list-link").Each(func(j int, selection *goquery.Selection) {
+			tmpUrl, _ := selection.Attr("href")
+			info.Links = append(info.Links, model.Link{
+				Id:    util.SimpleRegEx(tmpUrl, `(\d+-\d+-\d+)`),
+				Name:  selection.Find("span").Text(),
+				Url:   tmpUrl,
+				Group: tmpGroup,
+			})
+		})
+	})
 
 	return info
 }
