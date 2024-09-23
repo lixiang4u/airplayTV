@@ -57,6 +57,40 @@ func (x *MYDMovie) Source(sid, vid string) model.Video {
 //==============================实际业务处理逻辑============================
 //========================================================================
 
+func (x *MYDMovie) _ListByTag(tagName, page string) model.Pager {
+	var pager = model.Pager{Limit: 72, Current: util.HandlePageNumber(page)}
+
+	b, err := x.httpWrapper.Get(fmt.Sprintf(mydTagUrl, pager.Current))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return pager
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return pager
+	}
+
+	doc.Find(".module .module-item").Each(func(i int, selection *goquery.Selection) {
+		name := selection.Find(".module-poster-item-title").Text()
+		tmpUrl, _ := selection.Attr("href")
+		thumb, _ := selection.Find(".lazyload").Attr("data-original")
+		tag := selection.Find(".module-item-note").Text()
+
+		pager.List = append(pager.List, model.MovieInfo{
+			Id:         util.SimpleRegEx(tmpUrl, `(\d+)`),
+			Name:       name,
+			Thumb:      util.FillUrlHost(thumb, mydImageHost),
+			Url:        util.FillUrlHost(tmpUrl, mydImageHost),
+			Tag:        tag,
+			Resolution: tag,
+		})
+	})
+
+	return pager
+}
+
 func (x *MYDMovie) _ListBySearch(search, page string) model.Pager {
 	var pager = model.Pager{Limit: 15, Current: util.HandlePageNumber(page)}
 
@@ -87,40 +121,6 @@ func (x *MYDMovie) _ListBySearch(search, page string) model.Pager {
 			Tag:        tag,
 			Resolution: tag,
 			Intro:      strings.TrimSpace(intro),
-		})
-	})
-
-	return pager
-}
-
-func (x *MYDMovie) _ListByTag(tagName, page string) model.Pager {
-	var pager = model.Pager{Limit: 72, Current: util.HandlePageNumber(page)}
-
-	b, err := x.httpWrapper.Get(fmt.Sprintf(mydTagUrl, pager.Current))
-	if err != nil {
-		log.Println("[内容获取失败]", err.Error())
-		return pager
-	}
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
-	if err != nil {
-		log.Println("[文档解析失败]", err.Error())
-		return pager
-	}
-
-	doc.Find(".module .module-item").Each(func(i int, selection *goquery.Selection) {
-		name := selection.Find(".module-poster-item-title").Text()
-		tmpUrl, _ := selection.Attr("href")
-		thumb, _ := selection.Find(".lazyload").Attr("data-original")
-		tag := selection.Find(".module-item-note").Text()
-
-		pager.List = append(pager.List, model.MovieInfo{
-			Id:         util.SimpleRegEx(tmpUrl, `(\d+)`),
-			Name:       name,
-			Thumb:      util.FillUrlHost(thumb, mydImageHost),
-			Url:        util.FillUrlHost(tmpUrl, mydImageHost),
-			Tag:        tag,
-			Resolution: tag,
 		})
 	})
 
