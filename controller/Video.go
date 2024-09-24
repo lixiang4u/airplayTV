@@ -65,11 +65,6 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 	case "lv":
 		x.instant = service.LVMovie{Movie: m}
 		break
-	case "five":
-		_m := service.FiveMovie{}
-		_m.Init(m)
-		x.instant = &_m
-		break
 	case "yanf":
 		_m := service.YaNF{}
 		_m.Init(m)
@@ -90,6 +85,11 @@ func (x VideoController) getInstance(ctx *gin.Context) service.IVideoApi {
 		break
 	case "myd":
 		_m := service.MYDMovie{}
+		_m.Init(m)
+		x.instant = &_m
+		break
+	case "five":
+		_m := service.FiveMovie{}
 		_m.Init(m)
 		x.instant = &_m
 		break
