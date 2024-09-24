@@ -1,23 +1,30 @@
 package service
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dop251/goja"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
+	"net/url"
+	"path/filepath"
 	"strings"
 )
 
 var (
-	mydHost      = "https://myd04.com/"
-	mydImageHost = "https://www.mdzypic.com/"
-	mydTagUrl    = "https://myd04.com/vodshow/1--------%d---.html"
-	mydSearchUrl = "https://myd04.com/vodsearch/%s----------%d---.html"
-	mydDetailUrl = "https://myd04.com/voddetail/%s.html"
-	mydM3u8Url   = "https://nnyy.in/url.php"
-	mydPlayUrl   = "https://www.huibangpaint.com/vodplay/%s.html"
+	mydHost         = "https://myd04.com/"
+	mydImageHost    = "https://www.mdzypic.com/"
+	mydTagUrl       = "https://myd04.com/vodshow/1--------%d---.html"
+	mydSearchUrl    = "https://myd04.com/vodsearch/%s----------%d---.html"
+	mydDetailUrl    = "https://myd04.com/voddetail/%s.html"
+	mydM3u8Url      = "https://nnyy.in/url.php"
+	mydPlayUrl      = "https://myd04.com/vodplay/%s.html"
+	mydPlayFrameUrl = "https://myd04.com/player/?type=%d&url=%s"
+	//mydPlayFrameUrl = "https://myd04.com/player/?type=1&url=https://v.cdnlz12.com/20240923/17088_8a1a7530/index.m3u8&token=23bae8bed3694acc42860719a84db8ef"
 )
 
 type MYDMovie struct {
@@ -178,30 +185,154 @@ func (x *MYDMovie) _VideoDetail(id string) model.MovieInfo {
 }
 
 func (x *MYDMovie) _VideoSource(sid, vid string) model.Video {
-	var video = model.Video{Id: sid, Source: sid}
+	var video = model.Video{Id: sid, Source: sid, Vid: vid}
 
-	//获取基础信息
-	//c := x.Movie.NewColly()
-	//c.OnHTML(".myui-player__data", func(element *colly.HTMLElement) {
-	//	video.Name = element.ChildText(".text-fff")
-	//	video.Thumb = ""
-	//})
-	//c.OnHTML(".embed-responsive", func(element *colly.HTMLElement) {
-	//	video.Source = util.SimpleRegEx(element.Text, `"url":"(\S+?)",`)
-	//	video.Source = strings.ReplaceAll(video.Source, "\\/", "/")
-	//	video.Type = util.GuessVideoType(video.Source)
-	//
-	//	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
-	//})
-	//
-	//c.OnRequest(func(request *colly.Request) {
-	//	log.Println("Visiting", request.URL.String())
-	//})
-	//
-	//err := c.Visit(fmt.Sprintf(mydPlayUrl, sid))
+	b, err := x.httpWrapper.Get(fmt.Sprintf(mydPlayUrl, sid))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return video
+	}
+
+	//doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
 	//if err != nil {
-	//	log.Println("[visit.error]", err.Error())
+	//	log.Println("[文档解析失败]", err.Error())
+	//	return info
 	//}
 
+	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\S+)</script>`)
+	var result = gjson.Parse(findJson)
+	video.Url = result.Get("url").String()
+
+	var _type = result.Get("encrypt").Int()
+	switch _type {
+	case 1:
+		video.Url = url.QueryEscape(video.Url)
+		break
+	case 2:
+		tmpBuff, _ := base64.StdEncoding.DecodeString(video.Url)
+		video.Url = url.QueryEscape(string(tmpBuff))
+		break
+	default:
+		break
+	}
+
+	video.Source = result.Get("url").String()
+	video.Url = x.handleEncryptUrl(fmt.Sprintf(mydPlayFrameUrl, _type, video.Url), result)
+	video.Type = util.GuessVideoType(video.Url)
+
 	return video
+}
+
+func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result) string {
+	log.Println("[playFrameUrl]", playFrameUrl)
+
+	var parse = ""
+	var playServer = playerAAA.Get("server").String()
+	var playFrom = playerAAA.Get("from").String()
+	var playUrl = playerAAA.Get("url").String()
+	if playServer == "no" {
+		playServer = ""
+	}
+
+	// 获取配置
+	b, err := x.httpWrapper.Get("https://myd04.com/static/js/playerconfig.js?t=20240923")
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return ""
+	}
+	var jsText = string(b)
+	var findPlayerConfig = util.SimpleRegEx(jsText, `MacPlayerConfig=(\S+);`)
+	var findPlayerList = util.SimpleRegEx(jsText, `MacPlayerConfig.player_list=(\S+),MacPlayerConfig.downer_list`)
+	var findServerList = util.SimpleRegEx(jsText, `MacPlayerConfig.server_list=(\S+);`)
+
+	var playerConfigJson = gjson.Parse(findPlayerConfig)
+	var playerListJson = gjson.Parse(findPlayerList)
+	var serverListJson = gjson.Parse(findServerList)
+
+	serverListJson.ForEach(func(key, value gjson.Result) bool {
+		if playServer == key.String() {
+			playServer = value.Get("des").String()
+		}
+		return true
+	})
+
+	playerListJson.ForEach(func(key, value gjson.Result) bool {
+		if playFrom == key.String() {
+			if value.Get("ps").String() == "1" {
+				parse = value.Get("parse").String()
+				if value.Get("parse").String() == "" {
+					parse = playerConfigJson.Get("parse").String()
+				}
+				playFrom = "parse"
+			}
+		}
+		return true
+	})
+
+	// MacPlayer.Parse + MacPlayer.PlayUrl
+	log.Println("[player.request.url]", fmt.Sprintf("%s/%s%s", strings.TrimRight(mydHost, "/"), parse, playUrl))
+
+	// 获取配置
+	b, err = x.httpWrapper.Get(fmt.Sprintf("%s/%s%s", strings.TrimRight(mydHost, "/"), parse, playUrl))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return ""
+	}
+	//var findConfig = util.SimpleRegEx(string(b), `var config = ([\S\s]+)YKQ.start();`)
+	var findConfig = util.SimpleRegEx(string(b), `var config = (\{[\s\S]*?\})`)
+	var configJson = gjson.Parse(findConfig)
+	if !configJson.Get("url").Exists() {
+		log.Println("[config.parse.error]")
+		return ""
+	}
+
+	log.Println("[config.url]", configJson.Get("url"), configJson.Get("id"))
+
+	// key来源：https://myd04.com/player/js/setting.js?v=4
+	//// https://myd04.com/static/js/playerconfig.js?t=20240923
+	return x.fuckRc4(configJson.Get("url").String(), "202205051426239465", 1)
+}
+
+func (x *MYDMovie) getPlayerConfig(playFrameUrl string) {
+	// 数据来源：https://myd04.com/static/js/playerconfig.js?t=20240923
+	b, err := x.httpWrapper.Get("https://myd04.com/static/js/playerconfig.js?t=20240923")
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return
+	}
+	var jsText = string(b)
+	var findPlayerList = util.SimpleRegEx(jsText, `MacPlayerConfig.player_list=(\S+),MacPlayerConfig.downer_list`)
+	var findDownerList = util.SimpleRegEx(jsText, `MacPlayerConfig.downer_list=(\S+),MacPlayerConfig.server_list`)
+	var findServerList = util.SimpleRegEx(jsText, `MacPlayerConfig.server_list=(\S+);`)
+
+	var playerListJson = gjson.Parse(findPlayerList)
+	var downerListJson = gjson.Parse(findDownerList)
+	var serverListJson = gjson.Parse(findServerList)
+
+	log.Println(playerListJson)
+	log.Println(downerListJson)
+	log.Println(serverListJson)
+}
+
+func (x *MYDMovie) fuckRc4(data, key string, t int) string {
+	var scriptBuff = append(
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/base64-polyfill.js")),
+		util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/fuck-crypto-bridge-myd.js"))...,
+	)
+	vm := goja.New()
+	_, err := vm.RunString(string(scriptBuff))
+
+	if err != nil {
+		log.Println("[LoadGojaError]", err.Error())
+		return ""
+	}
+
+	var rc4Decode func(string, string, int) string
+	err = vm.ExportTo(vm.Get("rc4Decode"), &rc4Decode)
+	if err != nil {
+		log.Println("[ExportGojaFnError]", err.Error())
+		return ""
+	}
+
+	return rc4Decode(data, key, t)
 }
