@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -11,7 +12,6 @@ import (
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -48,8 +48,7 @@ func (x *M3u8Controller) Proxy(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, "参数错误")
 		return
 	}
-
-	log.Println("[Query]", q)
+	ctx.Header("X-Original-Url", q)
 
 	resp, err := http.Head(q)
 	if err != nil {
@@ -79,12 +78,17 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := playList.(*m3u8.MediaPlaylist)
+		if mediapl.Key != nil && len(mediapl.Key.URI) > 0 {
+			mediapl.Key.URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(x.handleM3u8PlayListUrl(mediapl.Key.URI, m3u8Url)))
+		}
 		for idx, val := range mediapl.Segments {
 			if val == nil {
 				continue
 			}
 			val.URI = x.handleM3u8PlayListUrl(val.URI, m3u8Url)
 			mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
+			// 这里不设置nil会导致出现两个EXT-X-KEY字段
+			val.Key = nil
 		}
 	case m3u8.MASTER:
 		masterpl := playList.(*m3u8.MasterPlaylist)
@@ -137,7 +141,13 @@ func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
 		return fmt.Sprintf("%s://%s/%s", parsedUrl.Scheme, parsedUrl.Host, playUrl)
 	} else {
 		parsedUrl, _ := url.Parse(m3u8Url)
-		return fmt.Sprintf("%s://%s/%s/%s", parsedUrl.Scheme, parsedUrl.Host, strings.TrimLeft(filepath.Dir(parsedUrl.Path), "\\/"), playUrl)
+		return fmt.Sprintf(
+			"%s://%s/%s/%s",
+			parsedUrl.Scheme,
+			parsedUrl.Host,
+			strings.ReplaceAll(strings.TrimLeft(filepath.Dir(parsedUrl.Path), "\\/"), "\\", "/"),
+			playUrl,
+		)
 	}
 }
 
@@ -177,6 +187,25 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 
 	var qContentType = strings.ToLower(resp2.Header.Get(headers.ContentType))
 
+	//bytes.NewReader()
+	// 小文件直接解析内容
+	var respReader io.Reader
+	if util.StringToInt(resp2.Header.Get(headers.ContentLength)) < 1024*800 {
+		respBuff, err := io.ReadAll(resp2.Body)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+			return
+		}
+		_, err = x.handleM3u8Url(ctx, q, respBuff)
+		if err == nil {
+			// 实际是播放文件，需要串改Content-Type
+			qContentType = "application/x-mpegurl"
+		}
+		respReader = bytes.NewReader(respBuff)
+	} else {
+		respReader = bufio.NewReader(resp2.Body)
+	}
+
 	switch qContentType {
 	case "application/vnd.apple.mpegurl":
 		fallthrough
@@ -187,17 +216,13 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 	case "audio/x-mpegurl":
 		fallthrough
 	case "video/vnd.mpegurl":
-		buf, err := io.ReadAll(resp2.Body)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
-			return
-		}
+		buf, _ := io.ReadAll(respReader)
 		x.handleResponseM3u8PlayList(ctx, q, buf)
 		return
 	}
 
 	ctx.Header(headers.ContentType, qContentType)
-	_, _ = io.Copy(ctx.Writer, resp2.Body)
+	_, _ = io.Copy(ctx.Writer, respReader)
 }
 
 func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContentType string) {
@@ -216,6 +241,8 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 	case "video/mp2t": // ts文件
 		fallthrough
 	case "image/jpeg": // 图像文件替代ts
+		fallthrough
+	case "": // https://p.hhwenjian.com:65/hls/488/20240824/2810990/plist0.ts
 		fallthrough
 	case "application/octet-stream":
 		x.handleM3u8Stream(ctx, q)
