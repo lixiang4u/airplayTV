@@ -95,6 +95,16 @@ func (x *MYDMovie) _ListByTag(tagName, page string) model.Pager {
 		})
 	})
 
+	var maxPage = 0
+	doc.Find("#page .page-link").Each(func(i int, selection *goquery.Selection) {
+		tmpUrl, _ := selection.Attr("href")
+		tmpNumber := util.StringToInt(util.SimpleRegEx(tmpUrl, `--------(\d+)---.html`))
+		if tmpNumber >= maxPage {
+			maxPage = tmpNumber
+		}
+	})
+	pager.Total = pager.Limit*maxPage + 1
+
 	return pager
 }
 
@@ -130,6 +140,16 @@ func (x *MYDMovie) _ListBySearch(search, page string) model.Pager {
 			//Intro:      strings.TrimSpace(intro),
 		})
 	})
+
+	var maxPage = 0
+	doc.Find("#page .page-link").Each(func(i int, selection *goquery.Selection) {
+		tmpUrl, _ := selection.Attr("href")
+		tmpNumber := util.StringToInt(util.SimpleRegEx(tmpUrl, `--------(\d+)---.html`))
+		if tmpNumber >= maxPage {
+			maxPage = tmpNumber
+		}
+	})
+	pager.Total = pager.Limit*maxPage + 1
 
 	return pager
 }

@@ -1,6 +1,6 @@
 package service
 
-import "C"
+//import "C"
 import (
 	"bytes"
 	"context"
@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	fiveHost      = "https://555movie.me"
-	fiveTagUrl    = "https://555movie.me/vodshow/1--------%d---.html"
-	fiveSearchUrl = "https://555movie.me/vodsearch/%s----------%d---.html"
-	fiveDetailUrl = "https://555movie.me/voddetail/%s.html"
-	fivePlayUrl   = "https://555movie.me/vodplay/%s.html"
+	fiveHost      = "https://wuo8i2u5.com"
+	fiveTagUrl    = "https://wuo8i2u5.com/vodshow/1--------%d---.html"
+	fiveSearchUrl = "https://wuo8i2u5.com/vodsearch/%s----------%d---.html"
+	fiveDetailUrl = "https://wuo8i2u5.com/voddetail/%s.html"
+	fivePlayUrl   = "https://wuo8i2u5.com/vodplay/%s.html"
 )
 
 //========================================================================
