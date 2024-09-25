@@ -37,6 +37,7 @@ var (
 	czDetailUrl = "https://czzy.top/movie/%s.html"
 	czPlayUrl   = "https://czzy.top/v_play/%s.html"
 	ua          = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+	m3u8pUrl    = "http://106.15.56.178:38386/api/m3u8p?q=%s"
 )
 
 //========================================================================
@@ -615,6 +616,17 @@ func (x *CZMovie) btWaf() error {
 		log.Println("[访问主站错误]", err.Error())
 		return err
 	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return err
+	}
+	if doc.Find("#challenge-error-text").Length() > 0 {
+		log.Println("[cloudflare challenge] " + doc.Find("#challenge-error-text").Text())
+		return errors.New("[cloudflare challenge] " + doc.Find("#challenge-error-text").Text())
+	}
+
 	regEx := regexp.MustCompile(`<script> window.location.href ="(\S+)"; </script>`)
 	matchResult := regEx.FindStringSubmatch(string(b))
 
