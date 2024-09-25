@@ -297,11 +297,12 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 			video.Source, video.Type = x.getFrameUrlContents(iframeUrl)
 			video.Source = util.FillUrlHost(video.Source, util.HandleHost(iframeUrl))
 			if video.Source != "" {
-				if util.CheckVideoUrl(video.Source) {
-					video.Url = video.Source
-				} else {
-					video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
-				}
+				video.Url = video.Source
+				//if util.CheckVideoUrl(video.Source) {
+				//	video.Url = video.Source
+				//} else {
+				//	video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+				//}
 			} else {
 				video.Source = x.parseNetworkMediaUrl(fmt.Sprintf(czPlayUrl, sid))
 				if util.CheckVideoUrl(video.Source) {
@@ -401,7 +402,8 @@ func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
 		if len(video.Type) == 0 {
 			video.Type = "hls"
 		}
-		video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
+		//video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
+		video.Url = video.Source
 	}
 
 	return video, nil

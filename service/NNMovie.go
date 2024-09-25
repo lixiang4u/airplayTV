@@ -219,7 +219,8 @@ func (x NNMovie) nnVideoSource(sid, vid string) model.Video {
 		video.Source = strings.ReplaceAll(video.Source, "\\/", "/")
 		video.Type = util.GuessVideoType(video.Source)
 
-		video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
+		//video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
+		video.Url = video.Source
 	})
 
 	c.OnRequest(func(request *colly.Request) {

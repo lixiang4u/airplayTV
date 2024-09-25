@@ -257,8 +257,8 @@ func (x *FiveMovie) fiveVideoSource(sid, vid string) model.Video {
 		return video
 	}
 
-	video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
-
+	//video.Url = HandleSrcM3U8FileToLocal(sid, video.Source, x.Movie.IsCache)
+	video.Url = video.Source
 	// 视频类型问题处理
 	video = x.handleVideoType(video)
 

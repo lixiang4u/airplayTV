@@ -269,7 +269,8 @@ func (x *YaNF) yanfVideoSource(sid, vid string) model.Video {
 				if util.CheckVideoUrl(video.Source) {
 					video.Url = video.Source
 				} else {
-					video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+					//video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+					video.Url = video.Source
 				}
 			} else {
 				video.Source = x.parseNetworkMediaUrl(fmt.Sprintf(yanfPlayUrl, sid))
@@ -364,11 +365,12 @@ func (x *YaNF) yanfParseVideoSource(id, js string) (model.Video, error) {
 	}
 
 	//  判断源文件是否需要下载
-	if util.CheckVideoUrl(video.Source) {
-		video.Url = video.Source
-	} else {
-		video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
-	}
+	//if util.CheckVideoUrl(video.Source) {
+	//	video.Url = video.Source
+	//} else {
+	//	video.Url = HandleSrcM3U8FileToLocal(id, video.Source, x.movie.IsCache)
+	//}
+	video.Url = video.Source
 
 	return video, nil
 }

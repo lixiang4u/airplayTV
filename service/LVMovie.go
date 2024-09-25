@@ -152,7 +152,8 @@ func (x LVMovie) lvVideoSource(sid, vid string) model.Video {
 			}
 			if urls[1] == tmpList[0] && urls[2] == tmpList[1] {
 				//info.Url = urls[3]
-				info.Url = HandleSrcM3U8FileToLocal(sid, urls[3], x.Movie.IsCache)
+				//info.Url = HandleSrcM3U8FileToLocal(sid, urls[3], x.Movie.IsCache)
+				info.Url = urls[3]
 				info.Type = "hls"
 			}
 		}
@@ -234,7 +235,8 @@ func (x LVMovie) getVideoUrl(sid, requestUrl string) model.Video {
 		requestUrl = util.HandleRedirectUrl(requestUrl)
 	}
 	// 下载m3u8
-	info.Url = HandleSrcM3U8FileToLocal(sid, requestUrl, x.Movie.IsCache)
+	//info.Url = HandleSrcM3U8FileToLocal(sid, requestUrl, x.Movie.IsCache)
+	info.Url = requestUrl
 	info.Type = "hls"
 
 	return info
