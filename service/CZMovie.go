@@ -33,7 +33,7 @@ import (
 var (
 	czHost      = "https://czzy.top"
 	czTagUrl    = "https://czzy.top/%s/movie_bt_series/dyy/page/%d"
-	czSearchUrl = "https://czzy.top/xsssbeanmch?q=%s&f=_all&p=%d"
+	czSearchUrl = "https://czzy.top/daoyongjiekoshibushiyoubing?q=%s&f=_all&p=%d"
 	czDetailUrl = "https://czzy.top/movie/%s.html"
 	czPlayUrl   = "https://czzy.top/v_play/%s.html"
 	ua          = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -149,14 +149,20 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 	//	log.Println("[绕过人机失败]", err.Error())
 	//	return pager
 	//}
-	x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=666;")
-	x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
-	h, b, err := x.httpWrapper.PostResponse(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)), "result=666")
+	//x.httpWrapper.SetHeader(headers.Cookie, "esc_search_captcha=1; result=666;")
+	//x.httpWrapper.SetHeader(headers.ContentType, "application/x-www-form-urlencoded")
+	//h, b, err := x.httpWrapper.PostResponse(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)), "result=666")
+	//if err != nil {
+	//	log.Println("[内容获取失败]", err.Error())
+	//	return pager
+	//}
+	//b = x.btWafSearch(h, b, fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
+
+	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
-	b = x.btWafSearch(h, b, fmt.Sprintf(czSearchUrl, query, util.HandlePageNumber(page)))
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
