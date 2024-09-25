@@ -88,12 +88,17 @@ func (x *CZMovie) czListByTag(tagName, page string) model.Pager {
 	var pager = model.Pager{}
 	pager.Limit = 25
 
-	err := x.btWaf()
-	if err != nil {
-		log.Println("[绕过人机失败]", err.Error())
-		return pager
-	}
-	b, err := x.httpWrapper.Get(fmt.Sprintf(czTagUrl, tagName, _page))
+	//err := x.btWaf()
+	//if err != nil {
+	//	log.Println("[绕过人机失败]", err.Error())
+	//	return pager
+	//}
+	//b, err := x.httpWrapper.Get(fmt.Sprintf(czTagUrl, tagName, _page))
+	//if err != nil {
+	//	log.Println("[内容获取失败]", err.Error())
+	//	return pager
+	//}
+	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(czTagUrl, tagName, _page))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
@@ -189,12 +194,17 @@ func (x *CZMovie) czListBySearch(query, page string) model.Pager {
 func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{}
 
-	err := x.btWaf()
-	if err != nil {
-		log.Println("[绕过人机失败]", err.Error())
-		return info
-	}
-	b, err := x.httpWrapper.Get(fmt.Sprintf(czDetailUrl, id))
+	//err := x.btWaf()
+	//if err != nil {
+	//	log.Println("[绕过人机失败]", err.Error())
+	//	return info
+	//}
+	//b, err := x.httpWrapper.Get(fmt.Sprintf(czDetailUrl, id))
+	//if err != nil {
+	//	log.Println("[内容获取失败]", err.Error())
+	//	return info
+	//}
+	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(czDetailUrl, id))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return info
@@ -226,12 +236,18 @@ func (x *CZMovie) czVideoDetail(id string) model.MovieInfo {
 func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid}
 
-	err := x.btWaf()
-	if err != nil {
-		log.Println("[绕过人机失败]", err.Error())
-		return video
-	}
-	b, err := x.httpWrapper.Get(fmt.Sprintf(czPlayUrl, sid))
+	//err := x.btWaf()
+	//if err != nil {
+	//	log.Println("[绕过人机失败]", err.Error())
+	//	return video
+	//}
+	//b, err := x.httpWrapper.Get(fmt.Sprintf(czPlayUrl, sid))
+	//if err != nil {
+	//	log.Println("[内容获取失败]", err.Error())
+	//	return video
+	//}
+
+	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(czPlayUrl, sid))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return video
@@ -617,14 +633,8 @@ func (x *CZMovie) btWaf() error {
 		return err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
-	if err != nil {
-		log.Println("[文档解析失败]", err.Error())
-		return err
-	}
-	if doc.Find("#challenge-error-text").Length() > 0 {
-		log.Println("[cloudflare challenge] " + doc.Find("#challenge-error-text").Text())
-		return errors.New("[cloudflare challenge] " + doc.Find("#challenge-error-text").Text())
+	if strings.Contains(string(b), "challenge-error-text") && strings.Contains(string(b), "cdn-cgi/challenge-platform") {
+		return errors.New("[cloudflare challenge]")
 	}
 
 	regEx := regexp.MustCompile(`<script> window.location.href ="(\S+)"; </script>`)
@@ -915,4 +925,13 @@ func (x *CZMovie) parseCookie(cookies []*network.Cookie) string {
 		}
 	}
 	return cookieString
+}
+
+func (x *CZMovie) handleHttpRequestByM3u8p(requestUrl string) ([]byte, error) {
+	header, buf, err := x.httpWrapper.GetResponse(fmt.Sprintf(m3u8pUrl, requestUrl))
+	if err != nil {
+		return nil, err
+	}
+	log.Println("[ContentType]", header.Get(headers.ContentType), requestUrl)
+	return buf, nil
 }
