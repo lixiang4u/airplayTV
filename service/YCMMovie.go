@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	// https://www.ycmdy.com/
 	ycmHost      = "https://www.kanjugg.com"
 	ycmTagUrl    = "https://www.kanjugg.com/list/?1-%d.html"
 	ycmSearchUrl = ""
