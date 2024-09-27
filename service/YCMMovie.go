@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
@@ -17,6 +18,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -226,7 +228,7 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 	defer ctxCancel()
 
 	// create a timeout as a safety net to prevent any infinite wait loops
-	ctx, timeoutCancel := context.WithTimeout(ctx, 60*time.Second)
+	ctx, timeoutCancel := context.WithTimeout(ctx, 80*time.Second)
 	defer timeoutCancel()
 
 	var urlMap = map[network.RequestID]string{}
@@ -235,9 +237,6 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 		switch ev := ev.(type) {
 		case *network.EventRequestWillBeSent:
 			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
-			//if util.StringInList(ev.Type.String(), []string{"Stylesheet", "Image", "Font"}) {
-			//	ev.Request.URL = ""
-			//}
 		case *network.EventWebSocketCreated:
 			//log.Println("[network.EventWebSocketCreated]", ev.URL)
 		case *network.EventWebSocketFrameError:
@@ -247,35 +246,11 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 		case *network.EventWebSocketFrameReceived:
 			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
 		case *network.EventResponseReceived:
-
 			log.Println("[network.EventResponseReceived]", ev.Type, ev.RequestID, ev.Response.URL)
 			if ev.Type == network.ResourceTypeDocument {
 				urlMap[ev.RequestID] = ev.Response.URL
-
-				//log.Println("[ev.Response.Headers]", ev.Response.URL, util.ToJSON(ev.Response.Headers, true))
-				//network.GetResponseBody(ev.RequestID).Do(ctx)
-
-				//go func() {
-				//	// print response body
-				//	c := chromedp.FromContext(ctx)
-				//	rbp := network.GetResponseBody(ev.RequestID)
-				//	body, err := rbp.Do(cdp.WithExecutor(ctx, c.Target))
-				//	if err != nil {
-				//		log.Println("[network.body.WithExecutor.Error]", ev.RequestID, err.Error())
-				//	}
-				//	if err = ioutil.WriteFile(ev.RequestID.String(), body, 0644); err != nil {
-				//		log.Println("[network.body.WriteFile.Error]", ev.RequestID, err.Error())
-				//	}
-				//	if err == nil {
-				//		log.Println("[network.body]", ev.RequestID, string(body))
-				//	}
-				//}()
-
 			}
-		//log.Println("[ev.Response.Headers]", ev.Response.URL, util.ToJSON(ev.Response.Headers, true))
-		//log.Println("[===============>Header]", util.ToJSON(ev.Response.Headers, true))
 		case *network.EventLoadingFinished:
-
 			//urlMap[ev.RequestID] = ev.Response.URL
 			if _, ok := urlMap[ev.RequestID]; ok {
 				go func() {
@@ -290,97 +265,55 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 						log.Println("[network.body.WriteFile.ErrorF]", ev.RequestID, err.Error())
 					}
 					if err == nil {
-						log.Println("[network.body.F]", ev.RequestID, string(body))
+						//log.Println("[network.body.F]", ev.RequestID, string(body))
+						log.Println("[network.body.Full]", ev.RequestID, len(string(body)))
 					}
+
 				}()
 			}
-
-			//go func() {
-			//	c := chromedp.FromContext(browser.Ctx)
-			//	body, err := network.GetResponseBody(ev.RequestID).Do(cdp.WithExecutor(browser.Ctx, c.Target))
-			//	if err != nil {
-			//		return
-			//	}
-			//	// url -> body  (completed)
-			//
-			//}()
-
 		case *runtime.EventConsoleAPICalled:
-			//log.Println("[runtime.EventConsoleAPICalled]", ev.Type, util.ToJSON(ev.Args, true))
-			//for _, arg := range ev.Args {
-			//	fmt.Printf("[EventConsoleAPICalled] %s - %s\n", arg.Type, arg.Value)
-			//}
+		case *fetch.EventRequestPaused:
+			log.Println("[fetch.EventRequestPaused]", ev.RequestID, ev.ResourceType, ev.Request.Method, ev.Request.URL)
+			go func() {
+				c := chromedp.FromContext(ctx)
+				ctx := cdp.WithExecutor(ctx, c.Target)
+				if slices.Contains([]network.ResourceType{network.ResourceTypeStylesheet, network.ResourceTypeImage, network.ResourceTypeFont}, ev.ResourceType) {
+					_ = fetch.FailRequest(ev.RequestID, network.ErrorReasonConnectionAborted).Do(ctx)
+				} else {
+					_ = fetch.ContinueRequest(ev.RequestID).Do(ctx)
+				}
+			}()
 
 		}
 	})
-
-	//var res []byte
-	//var html string
-	//var iframes []*cdp.Node
-	//log.Println("=========0")
-	//err := chromedp.Run(
-	//	ctx,
-	//	network.Enable(),
-	//	chromedp.Navigate(requestUrl),
-	//)
-	//if err != nil {
-	//	log.Println("[Error1]", err.Error())
-	//	return ""
-	//}
-	//log.Println("=========1")
-	//err = chromedp.Run(
-	//	ctx,
-	//	chromedp.WaitReady("iframe"),
-	//	chromedp.Nodes("iframe", &iframes, chromedp.ByQuery),
-	//	chromedp.ActionFunc(func(ctx context.Context) error {
-	//
-	//		log.Println("[iframes]", len(iframes))
-	//
-	//		return nil
-	//	}),
-	//)
-	//if err != nil {
-	//	log.Println("[Error2]", err.Error())
-	//	return ""
-	//}
-	//log.Println("=========2")
-	//err = chromedp.Run(
-	//	ctx,
-	//	chromedp.ActionFunc(func(ctx context.Context) error {
-	//		log.Println("[ActionFunc] 1")
-	//		log.Println("[ActionFunc]", util.ToJSON(iframes[0], true))
-	//		return nil
-	//	}),
-	//	chromedp.WaitReady(".main-wrapper", chromedp.ByQuery, chromedp.FromNode(iframes[0])),
-	//	//chromedp.WaitVisible("body", chromedp.ByQuery, chromedp.FromNode(iframes[0])),
-	//	//chromedp.InnerHTML(".ctp-label", &html),
-	//	chromedp.ActionFunc(func(ctx context.Context) error {
-	//		log.Println("[ActionFunc] 2")
-	//		return nil
-	//	}),
-	//
-	//	chromedp.InnerHTML(".main-wrapper", &html, chromedp.ByQuery),
-	//	chromedp.FullScreenshot(&res, 90),
-	//)
 
 	var isWebDriver bool
 	var screenshot []byte
 	var cookie string
 	err := chromedp.Run(
 		ctx,
+		fetch.Enable(),
 		chromedp.EmulateViewport(880, 435),
 		chromedp.Tasks{
 			network.Enable(),
 			chromedp.Navigate(requestUrl),
-			chromedp.Sleep(time.Second * 50),
+			//chromedp.Sleep(time.Second * 50),
 			chromedp.Evaluate(`window.navigator.webdriver`, &isWebDriver),
 			//chromedp.MouseClickXY(56, 290),
 			//chromedp.MouseClickXY(60, 290),
 			chromedp.WaitVisible(".myui-vodlist__media"),
 			chromedp.WaitVisible(".myui-page"),
 			chromedp.ActionFunc(func(ctx context.Context) error {
-				cookies, _ := network.GetAllCookies().Do(ctx)
-				cookie = x.parseCookie(cookies)
+				log.Println("[====================> SEE]")
+				return nil
+			}),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				tmpCookies, err := network.GetCookies().Do(ctx)
+				if err != nil {
+					log.Println("[network.GetCookies.Error0!!!]", err.Error())
+				} else {
+					log.Println("[network.GetCookies.List!!!]", util.ToJSON(tmpCookies, true))
+				}
 				return nil
 			}),
 			chromedp.FullScreenshot(&screenshot, 90),
