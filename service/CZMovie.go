@@ -899,8 +899,8 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 			chromedp.MouseClickXY(60, 290),
 			chromedp.WaitVisible(".mikd"),
 			chromedp.ActionFunc(func(ctx context.Context) error {
-				cookies, _ := network.GetAllCookies().Do(ctx)
-				cookie = x.parseCookie(cookies)
+				//cookies, _ := network.GetAllCookies().Do(ctx)
+				//cookie = x.parseCookie(cookies)
 				return nil
 			}),
 			chromedp.FullScreenshot(&screenshot, 90),
