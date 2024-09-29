@@ -18,7 +18,7 @@ var (
 	// https://www.ycmdy.com/
 	ycmHost      = "https://www.kanjugg.com"
 	ycmTagUrl    = "https://www.kanjugg.com/list/?1-%d.html"
-	ycmSearchUrl = "https://www.kanjugg.com/search.php?searchword=我的"
+	ycmSearchUrl = "https://www.kanjugg.com/search.php?searchword=%s"
 	ycmDetailUrl = "https://www.kanjugg.com/detail/?%s.html"
 	ycmPlayUrl   = "https://www.kanjugg.com/video/?%s.html"
 )
@@ -113,7 +113,7 @@ func (x *YCMMovie) ysListBySearch(query, page string) model.Pager {
 	pager.Limit = 10
 	pager.Current = handleNNPageNumber(page)
 
-	b, err := x.httpWrapper.Get(fmt.Sprintf(ycmSearchUrl))
+	b, err := x.httpWrapper.Get(fmt.Sprintf(ycmSearchUrl, query))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
@@ -121,8 +121,9 @@ func (x *YCMMovie) ysListBySearch(query, page string) model.Pager {
 	var respHtml = string(b)
 
 	if strings.Contains(respHtml, "window._cf_chl_opt") {
-		log.Println("[cloudflare] waf", fmt.Sprintf(cloudflareUrl, url.QueryEscape(ycmSearchUrl), url.QueryEscape("#searchList")))
-		buf, err := x.httpWrapper.Get(fmt.Sprintf(cloudflareUrl, url.QueryEscape(ycmSearchUrl), url.QueryEscape("#searchList")))
+		var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(ycmSearchUrl, query)), url.QueryEscape("#searchList"))
+		log.Println("[cloudflare] waf", cfUrl)
+		buf, err := x.httpWrapper.Get(cfUrl)
 		if err != nil {
 			log.Println("[cloudflare] challenge", err.Error())
 			return pager
