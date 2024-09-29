@@ -6,7 +6,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
-	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
 	"net/url"
@@ -120,17 +119,8 @@ func (x *YCMMovie) ysListBySearch(query, page string) model.Pager {
 	}
 	var respHtml = string(b)
 
-	if strings.Contains(respHtml, "window._cf_chl_opt") {
-		var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(ycmSearchUrl, query)), url.QueryEscape("#searchList"))
-		log.Println("[cloudflare] waf", cfUrl)
-		buf, err := x.httpWrapper.Get(cfUrl)
-		if err != nil {
-			log.Println("[cloudflare] challenge", err.Error())
-			return pager
-		}
-		var result = gjson.ParseBytes(buf)
-		respHtml = result.Get("html").String()
-	}
+	var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(ycmSearchUrl, query)), url.QueryEscape("#searchList"))
+	respHtml = fuckCloudflare(respHtml, cfUrl)
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
 	if err != nil {

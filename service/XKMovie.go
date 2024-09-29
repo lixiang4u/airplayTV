@@ -8,6 +8,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
+	"net/url"
 	"strings"
 )
 
@@ -106,8 +107,11 @@ func (x *XKMovie) nnListByTag(tagName, page string) model.Pager {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
+	var respHtml = string(b)
+	var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(xkTagUrl, pager.Current)), url.QueryEscape(".stui-vodlist"))
+	respHtml = fuckCloudflare(respHtml, cfUrl)
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
 		return pager
@@ -147,7 +151,11 @@ func (x *XKMovie) nnVideoDetail(id string) model.MovieInfo {
 		return info
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	var respHtml = string(b)
+	var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(xkDetailUrl, id)), url.QueryEscape(".playlist .nav-tabs li"))
+	respHtml = fuckCloudflare(respHtml, cfUrl)
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
 		return info
@@ -189,7 +197,11 @@ func (x *XKMovie) nnVideoSource(sid, vid string) model.Video {
 		return video
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	var respHtml = string(b)
+	var cfUrl = fmt.Sprintf(cloudflareUrl, url.QueryEscape(fmt.Sprintf(xkPlayUrl, sid)), url.QueryEscape(".stui-content__desc"))
+	respHtml = fuckCloudflare(respHtml, cfUrl)
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
 		return video
