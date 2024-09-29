@@ -1,25 +1,17 @@
 package service
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/fetch"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
-	"io/ioutil"
 	"log"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var (
@@ -118,7 +110,8 @@ func (x *YCMMovie) ysListByTag(tagName, page string) model.Pager {
 
 func (x *YCMMovie) ysListBySearch(query, page string) model.Pager {
 	var pager = model.Pager{}
-	pager.Limit = 20
+	pager.Limit = 10
+	pager.Current = handleNNPageNumber(page)
 
 	b, err := x.httpWrapper.Get(fmt.Sprintf(ycmSearchUrl))
 	if err != nil {
@@ -128,10 +121,42 @@ func (x *YCMMovie) ysListBySearch(query, page string) model.Pager {
 	var respHtml = string(b)
 
 	if strings.Contains(respHtml, "window._cf_chl_opt") {
-		log.Println("【cloudflare】waf")
-		x.getHtmlCrossCloudflare(ycmSearchUrl)
-
+		log.Println("[cloudflare] waf", fmt.Sprintf(cloudflareUrl, url.QueryEscape(ycmSearchUrl), url.QueryEscape("#searchList")))
+		buf, err := x.httpWrapper.Get(fmt.Sprintf(cloudflareUrl, url.QueryEscape(ycmSearchUrl), url.QueryEscape("#searchList")))
+		if err != nil {
+			log.Println("[cloudflare] challenge", err.Error())
+			return pager
+		}
+		var result = gjson.ParseBytes(buf)
+		respHtml = result.Get("html").String()
 	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return pager
+	}
+
+	var totalPageString = strings.TrimSpace(doc.Find(".myui-page .visible-xs").Text())
+	pager.Total = util.StringToInt(util.SimpleRegEx(totalPageString, `\/(\d+)`))*pager.Limit + 1
+
+	doc.Find("#searchList li").Each(func(i int, selection *goquery.Selection) {
+		name := selection.Find(".detail .title a").Text()
+		tmpUrl, _ := selection.Find(".detail .title a").Attr("href")
+		thumb, _ := selection.Find(".myui-vodlist__thumb").Attr("data-original")
+		tag := selection.Find(".xxx").Text()
+		resolution := selection.Find(".xxx").Text()
+
+		pager.List = append(pager.List, model.MovieInfo{
+			Id:         util.SimpleRegEx(tmpUrl, `(\d+)`),
+			Name:       name,
+			Thumb:      util.FillUrlHost(thumb, ycmHost),
+			Url:        tmpUrl,
+			Actors:     "",
+			Tag:        strings.TrimSpace(tag),
+			Resolution: resolution,
+		})
+	})
 
 	return pager
 }
@@ -209,133 +234,4 @@ func (x *YCMMovie) ysVideoSource(sid, vid string) model.Video {
 	video.Type = util.GuessVideoType(video.Url)
 
 	return video
-}
-
-func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
-	var findUrl string
-
-	allocCtx, allocCancel := chromedp.NewExecAllocator(
-		context.Background(),
-		chromedp.Flag("enable-automation", false),
-		chromedp.Flag("disable-blink-features", "AutomationControlled"),
-		chromedp.UserAgent(ua),
-	)
-	defer allocCancel()
-
-	ctx, ctxCancel := chromedp.NewContext(allocCtx)
-	defer ctxCancel()
-
-	// create a timeout as a safety net to prevent any infinite wait loops
-	ctx, timeoutCancel := context.WithTimeout(ctx, 80*time.Second)
-	defer timeoutCancel()
-
-	//var respHtml string
-	var urlMap = map[network.RequestID]string{}
-
-	chromedp.ListenTarget(ctx, func(ev interface{}) {
-		switch ev := ev.(type) {
-		case *network.EventRequestWillBeSent:
-			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
-		case *network.EventWebSocketCreated:
-			//log.Println("[network.EventWebSocketCreated]", ev.URL)
-		case *network.EventWebSocketFrameError:
-			log.Println("[network.EventWebSocketFrameError]", ev.ErrorMessage)
-		case *network.EventWebSocketFrameSent:
-			//log.Println("[network.EventWebSocketFrameSent]", ev.Response.PayloadData)
-		case *network.EventWebSocketFrameReceived:
-			//log.Println("[network.EventWebSocketFrameReceived]", ev.Response.PayloadData)
-		case *network.EventResponseReceived:
-			log.Println("[network.EventResponseReceived]", ev.Type, ev.RequestID, ev.Response.URL)
-			if ev.Type == network.ResourceTypeDocument {
-				urlMap[ev.RequestID] = ev.Response.URL
-			}
-		case *network.EventLoadingFinished:
-			//urlMap[ev.RequestID] = ev.Response.URL
-			if _, ok := urlMap[ev.RequestID]; ok {
-				go func() {
-					// print response body
-					c := chromedp.FromContext(ctx)
-					rbp := network.GetResponseBody(ev.RequestID)
-					body, err := rbp.Do(cdp.WithExecutor(ctx, c.Target))
-					if err != nil {
-						log.Println("[network.body.WithExecutor.ErrorF]", ev.RequestID, err.Error())
-					}
-					if err = ioutil.WriteFile(ev.RequestID.String(), body, 0644); err != nil {
-						log.Println("[network.body.WriteFile.ErrorF]", ev.RequestID, err.Error())
-					}
-					if err == nil {
-						//log.Println("[network.body.F]", ev.RequestID, string(body))
-						log.Println("[network.body.Full]", ev.RequestID, len(string(body)))
-						//respHtml += string(body)
-					}
-
-				}()
-			}
-		case *runtime.EventConsoleAPICalled:
-		case *fetch.EventRequestPaused:
-			log.Println("[fetch.EventRequestPaused]", ev.RequestID, ev.ResourceType, ev.Request.Method, ev.Request.URL)
-
-			go func() {
-				parsed, err := url.Parse(ev.Request.URL)
-				if err != nil {
-					return
-				}
-				var isChallenge = strings.HasPrefix(parsed.Path, "/cdn-cgi/challenge-platform")
-				var isTurnstile = strings.HasPrefix(parsed.Path, "/turnstile/")
-
-				c := chromedp.FromContext(ctx)
-				ctx := cdp.WithExecutor(ctx, c.Target)
-				if slices.Contains([]network.ResourceType{network.ResourceTypeStylesheet, network.ResourceTypeImage, network.ResourceTypeFont}, ev.ResourceType) {
-					_ = fetch.FailRequest(ev.RequestID, network.ErrorReasonConnectionAborted).Do(ctx)
-				} else if ev.ResourceType == network.ResourceTypeScript && (!isChallenge && !isTurnstile) {
-					_ = fetch.FailRequest(ev.RequestID, network.ErrorReasonConnectionAborted).Do(ctx)
-				} else {
-					_ = fetch.ContinueRequest(ev.RequestID).Do(ctx)
-				}
-			}()
-
-		}
-	})
-
-	var respHtml = ""
-	//var isWebDriver bool
-	//var screenshot []byte
-	//var cookie string
-	err := chromedp.Run(
-		ctx,
-		fetch.Enable(),
-		network.Enable(),
-		chromedp.EmulateViewport(880, 435),
-		chromedp.Navigate(requestUrl),
-		chromedp.Tasks{
-			chromedp.WaitVisible(".myui-vodlist__media"),
-			chromedp.WaitVisible(".myui-page"),
-			chromedp.InnerHTML("html", &respHtml),
-			chromedp.Sleep(time.Second * 2),
-		},
-	)
-
-	if err != nil {
-		log.Println("[chromedp.Run.Error]", err.Error())
-	}
-
-	log.Println("[respHtml===========>]", respHtml)
-
-	return findUrl
-}
-
-func (x *YCMMovie) parseCookie(cookies []*network.Cookie) string {
-	log.Println("[parseCookie]", util.ToJSON(cookies, true))
-	var cookieString = ""
-	if cookies == nil || len(cookies) <= 0 {
-		return cookieString
-	}
-	for _, cookie := range cookies {
-		if len(cookieString) <= 0 {
-			cookieString = fmt.Sprintf("%s=%s", cookie.Name, cookie.Value)
-		} else {
-			cookieString = fmt.Sprintf("%s; %s=%s", cookieString, cookie.Name, cookie.Value)
-		}
-	}
-	return cookieString
 }
