@@ -242,6 +242,8 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 		fallthrough
 	case "image/jpeg": // 图像文件替代ts
 		fallthrough
+	case "image/png": // 图像文件替代ts
+		fallthrough
 	case "": // https://p.hhwenjian.com:65/hls/488/20240824/2810990/plist0.ts
 		fallthrough
 	case "application/octet-stream":
