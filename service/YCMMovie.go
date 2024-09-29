@@ -13,11 +13,9 @@ import (
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
-	"io/fs"
 	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -231,12 +229,13 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 	ctx, timeoutCancel := context.WithTimeout(ctx, 80*time.Second)
 	defer timeoutCancel()
 
+	//var respHtml string
 	var urlMap = map[network.RequestID]string{}
 
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
 		switch ev := ev.(type) {
 		case *network.EventRequestWillBeSent:
-			log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
+			//log.Println("[network.EventRequestWillBeSent]", ev.Type, ev.Request.URL)
 		case *network.EventWebSocketCreated:
 			//log.Println("[network.EventWebSocketCreated]", ev.URL)
 		case *network.EventWebSocketFrameError:
@@ -267,6 +266,7 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 					if err == nil {
 						//log.Println("[network.body.F]", ev.RequestID, string(body))
 						log.Println("[network.body.Full]", ev.RequestID, len(string(body)))
+						//respHtml += string(body)
 					}
 
 				}()
@@ -274,10 +274,20 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 		case *runtime.EventConsoleAPICalled:
 		case *fetch.EventRequestPaused:
 			log.Println("[fetch.EventRequestPaused]", ev.RequestID, ev.ResourceType, ev.Request.Method, ev.Request.URL)
+
 			go func() {
+				parsed, err := url.Parse(ev.Request.URL)
+				if err != nil {
+					return
+				}
+				var isChallenge = strings.HasPrefix(parsed.Path, "/cdn-cgi/challenge-platform")
+				var isTurnstile = strings.HasPrefix(parsed.Path, "/turnstile/")
+
 				c := chromedp.FromContext(ctx)
 				ctx := cdp.WithExecutor(ctx, c.Target)
 				if slices.Contains([]network.ResourceType{network.ResourceTypeStylesheet, network.ResourceTypeImage, network.ResourceTypeFont}, ev.ResourceType) {
+					_ = fetch.FailRequest(ev.RequestID, network.ErrorReasonConnectionAborted).Do(ctx)
+				} else if ev.ResourceType == network.ResourceTypeScript && (!isChallenge && !isTurnstile) {
 					_ = fetch.FailRequest(ev.RequestID, network.ErrorReasonConnectionAborted).Do(ctx)
 				} else {
 					_ = fetch.ContinueRequest(ev.RequestID).Do(ctx)
@@ -287,48 +297,59 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 		}
 	})
 
-	var isWebDriver bool
-	var screenshot []byte
-	var cookie string
+	var respHtml = ""
+	//var isWebDriver bool
+	//var screenshot []byte
+	//var cookie string
 	err := chromedp.Run(
 		ctx,
 		fetch.Enable(),
+		network.Enable(),
 		chromedp.EmulateViewport(880, 435),
+		chromedp.Navigate(requestUrl),
 		chromedp.Tasks{
-			network.Enable(),
-			chromedp.Navigate(requestUrl),
 			//chromedp.Sleep(time.Second * 50),
-			chromedp.Evaluate(`window.navigator.webdriver`, &isWebDriver),
+			//chromedp.Evaluate(`window.navigator.webdriver`, &isWebDriver),
 			//chromedp.MouseClickXY(56, 290),
 			//chromedp.MouseClickXY(60, 290),
 			chromedp.WaitVisible(".myui-vodlist__media"),
 			chromedp.WaitVisible(".myui-page"),
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				log.Println("[====================> SEE]")
-				return nil
-			}),
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				tmpCookies, err := network.GetCookies().Do(ctx)
-				if err != nil {
-					log.Println("[network.GetCookies.Error0!!!]", err.Error())
-				} else {
-					log.Println("[network.GetCookies.List!!!]", util.ToJSON(tmpCookies, true))
-				}
-				return nil
-			}),
-			chromedp.FullScreenshot(&screenshot, 90),
+			chromedp.InnerHTML(".myui-page", &respHtml),
+			chromedp.Sleep(time.Second * 2),
+			//chromedp.ActionFunc(func(ctx context.Context) error {
+			//	log.Println("[====================> SEE]")
+			//
+			//	chromedp.InnerHTML(".myui-page", &respHtml)
+			//
+			//	log.Println("[@@@@@@@@respHtml]", respHtml)
+			//	//
+			//	//chromedp.OuterHTML("body", &respHtml)
+			//	return nil
+			//}),
+			//chromedp.ActionFunc(func(ctx context.Context) error {
+			//	tmpCookies, err := network.GetCookies().Do(ctx)
+			//	if err != nil {
+			//		log.Println("[network.GetCookies.Error0!!!]", err.Error())
+			//	} else {
+			//		log.Println("[network.GetCookies.List!!!]", util.ToJSON(tmpCookies, true))
+			//	}
+			//	return nil
+			//}),
+			//chromedp.FullScreenshot(&screenshot, 90),
 		},
 	)
 
-	log.Println("[isWebDriver]", isWebDriver)
-	log.Println("[cookie]", cookie)
+	//log.Println("[isWebDriver]", isWebDriver)
+	//log.Println("[cookie]", cookie)
 
 	if err != nil {
 		log.Println("[chromedp.Run.Error]", err.Error())
 	}
-	if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), screenshot, fs.ModePerm); err != nil {
-		log.Fatal(err)
-	}
+	//if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), screenshot, fs.ModePerm); err != nil {
+	//	log.Fatal(err)
+	//}
+
+	log.Println("[respHtml===========>]", respHtml)
 
 	return findUrl
 }
