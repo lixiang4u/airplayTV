@@ -308,46 +308,16 @@ func (x *YCMMovie) getHtmlCrossCloudflare(requestUrl string) string {
 		chromedp.EmulateViewport(880, 435),
 		chromedp.Navigate(requestUrl),
 		chromedp.Tasks{
-			//chromedp.Sleep(time.Second * 50),
-			//chromedp.Evaluate(`window.navigator.webdriver`, &isWebDriver),
-			//chromedp.MouseClickXY(56, 290),
-			//chromedp.MouseClickXY(60, 290),
 			chromedp.WaitVisible(".myui-vodlist__media"),
 			chromedp.WaitVisible(".myui-page"),
-			chromedp.InnerHTML(".myui-page", &respHtml),
+			chromedp.InnerHTML("html", &respHtml),
 			chromedp.Sleep(time.Second * 2),
-			//chromedp.ActionFunc(func(ctx context.Context) error {
-			//	log.Println("[====================> SEE]")
-			//
-			//	chromedp.InnerHTML(".myui-page", &respHtml)
-			//
-			//	log.Println("[@@@@@@@@respHtml]", respHtml)
-			//	//
-			//	//chromedp.OuterHTML("body", &respHtml)
-			//	return nil
-			//}),
-			//chromedp.ActionFunc(func(ctx context.Context) error {
-			//	tmpCookies, err := network.GetCookies().Do(ctx)
-			//	if err != nil {
-			//		log.Println("[network.GetCookies.Error0!!!]", err.Error())
-			//	} else {
-			//		log.Println("[network.GetCookies.List!!!]", util.ToJSON(tmpCookies, true))
-			//	}
-			//	return nil
-			//}),
-			//chromedp.FullScreenshot(&screenshot, 90),
 		},
 	)
-
-	//log.Println("[isWebDriver]", isWebDriver)
-	//log.Println("[cookie]", cookie)
 
 	if err != nil {
 		log.Println("[chromedp.Run.Error]", err.Error())
 	}
-	//if err := os.WriteFile(filepath.Join(util.AppPath(), fmt.Sprintf("fullScreenshot-%d.png", time.Now().Unix())), screenshot, fs.ModePerm); err != nil {
-	//	log.Fatal(err)
-	//}
 
 	log.Println("[respHtml===========>]", respHtml)
 
