@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 )
@@ -265,10 +264,17 @@ func (x *M3u8Controller) handleMediaSegmentAdvertisement(segment *m3u8.MediaSegm
 	if segment == nil {
 		return nil
 	}
-	if slices.Contains(service.HostWithAds, m3u8Host) {
+	switch m3u8Host {
+	case "c1.rrcdnbf3.com":
 		if strings.Contains(segment.URI, "video/adjump") {
 			segment.Duration = 0.200
-			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts"
+			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts?fuck-ads"
+			return segment
+		}
+	case "debug.rrcdnbf3.com":
+		if strings.Contains(segment.URI, "video/adjump") {
+			segment.Duration = 0.200
+			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts?fuck-ads"
 			return segment
 		}
 	}
