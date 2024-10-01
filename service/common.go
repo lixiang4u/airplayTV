@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	aspUrl = "XXX"
+	cloudflarePostUrl = "http://127.0.0.1:38386/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
 )
 
 func fuckCloudflare(tmpHtml, cloudflareUrl string) string {

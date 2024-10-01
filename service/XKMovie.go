@@ -67,7 +67,20 @@ func (x *XKMovie) nnListBySearch(search, page string) model.Pager {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+
+	var respHtml = string(b)
+	var cfUrl = fmt.Sprintf(
+		cloudflarePostUrl,
+		url.QueryEscape(xkSearchUrl),
+		url.QueryEscape(".stui-vodlist"),
+		url.QueryEscape(fmt.Sprintf("wd=%s", search)),
+		url.QueryEscape(util.ToJSON(map[string]string{
+			headers.ContentType: "application/x-www-form-urlencoded",
+		}, false)),
+	)
+	respHtml = fuckCloudflare(respHtml, cfUrl)
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(respHtml))
 	if err != nil {
 		log.Println("[文档解析失败]", err.Error())
 		return pager
@@ -210,7 +223,7 @@ func (x *XKMovie) nnVideoSource(sid, vid string) model.Video {
 	video.Name, _ = doc.Find(".stui-content__desc").Find(".pic").Attr("title")
 	video.Thumb, _ = doc.Find(".stui-content__desc").Find(".img-responsive").Attr("src")
 
-	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\S+)</script>`)
+	var findJson = util.SimpleRegEx(respHtml, `player_aaaa=(\S+)</script>`)
 	var result = gjson.Parse(findJson)
 	video.Url = result.Get("url").String()
 	video.Source = result.Get("url").String()
