@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -74,6 +75,7 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 	if err != nil {
 		return playList, err
 	}
+	var m3u8Host = util.HandleHostname(m3u8Url) // 不带端口的域名
 
 	switch listType {
 	case m3u8.MEDIA:
@@ -82,6 +84,7 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 			mediapl.Key.URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(x.handleM3u8PlayListUrl(mediapl.Key.URI, m3u8Url)))
 		}
 		for idx, val := range mediapl.Segments {
+			val = x.handleMediaSegmentAdvertisement(val, m3u8Host)
 			if val == nil {
 				continue
 			}
@@ -138,7 +141,7 @@ func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
 	playUrl = strings.TrimSpace(playUrl)
 	if strings.HasPrefix(playUrl, "/") {
 		parsedUrl, _ := url.Parse(m3u8Url)
-		return fmt.Sprintf("%s://%s/%s", parsedUrl.Scheme, parsedUrl.Host, playUrl)
+		return fmt.Sprintf("%s://%s/%s", parsedUrl.Scheme, parsedUrl.Host, strings.TrimLeft(playUrl, "/"))
 	} else {
 		parsedUrl, _ := url.Parse(m3u8Url)
 		return fmt.Sprintf(
@@ -256,4 +259,19 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 		break
 	}
 
+}
+
+func (x *M3u8Controller) handleMediaSegmentAdvertisement(segment *m3u8.MediaSegment, m3u8Host string) *m3u8.MediaSegment {
+	if segment == nil {
+		return nil
+	}
+	if slices.Contains(service.HostWithAds, m3u8Host) {
+		if strings.Contains(segment.URI, "video/adjump") {
+			segment.Duration = 0.200
+			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts"
+			return segment
+		}
+	}
+
+	return segment
 }

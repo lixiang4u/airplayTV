@@ -13,6 +13,12 @@ var (
 	cloudflarePostUrl = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
 )
 
+var (
+	HostWithAds = []string{
+		"c1.rrcdnbf3.com",
+	}
+)
+
 func fuckCloudflare(tmpHtml, cloudflareUrl string) string {
 	if strings.Contains(tmpHtml, "window._cf_chl_opt") {
 		log.Println("[cloudflare] waf", cloudflareUrl)
