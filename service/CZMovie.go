@@ -31,14 +31,12 @@ import (
 )
 
 var (
-	czHost        = "https://czzy.top"
-	czTagUrl      = "https://czzy.top/%s/movie_bt_series/dyy/page/%d"
-	czSearchUrl   = "https://czzy.top/daoyongjiekoshibushiyoubing?q=%s&f=_all&p=%d"
-	czDetailUrl   = "https://czzy.top/movie/%s.html"
-	czPlayUrl     = "https://czzy.top/v_play/%s.html"
-	ua            = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-	m3u8pUrl      = "http://106.15.56.178:38386/api/m3u8p?q=%s"
-	cloudflareUrl = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s"
+	czHost      = "https://czzy.top"
+	czTagUrl    = "https://czzy.top/%s/movie_bt_series/dyy/page/%d"
+	czSearchUrl = "https://czzy.top/daoyongjiekoshibushiyoubing?q=%s&f=_all&p=%d"
+	czDetailUrl = "https://czzy.top/movie/%s.html"
+	czPlayUrl   = "https://czzy.top/v_play/%s.html"
+	ua          = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 )
 
 //========================================================================

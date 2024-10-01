@@ -8,7 +8,9 @@ import (
 )
 
 var (
-	cloudflarePostUrl = "http://127.0.0.1:38386/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
+	m3u8pUrl          = "http://106.15.56.178:38386/api/m3u8p?q=%s"
+	cloudflareUrl     = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s"
+	cloudflarePostUrl = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
 )
 
 func fuckCloudflare(tmpHtml, cloudflareUrl string) string {
