@@ -12,9 +12,12 @@ import (
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/zc310/headers"
 	"io"
+	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -74,7 +77,6 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 	if err != nil {
 		return playList, err
 	}
-	var m3u8Host = util.HandleHostname(m3u8Url) // 不带端口的域名
 
 	switch listType {
 	case m3u8.MEDIA:
@@ -82,11 +84,15 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 		if mediapl.Key != nil && len(mediapl.Key.URI) > 0 {
 			mediapl.Key.URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(x.handleM3u8PlayListUrl(mediapl.Key.URI, m3u8Url)))
 		}
+		var adsUrls = x.handleGuessAdsUrl(mediapl.Segments)
 		for idx, val := range mediapl.Segments {
-			// 过滤广告URL
-			val = x.handleMediaSegmentAdvertisement(val, m3u8Host)
 			if val == nil {
 				continue
+			}
+			// 过滤广告URL
+			if slices.Contains(adsUrls, val.URI) {
+				val.Duration = 0
+				val.URI = ""
 			}
 			// 修正URL路径带域名
 			val.URI = x.handleM3u8PlayListUrl(val.URI, m3u8Url)
@@ -268,24 +274,36 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 
 }
 
-func (x *M3u8Controller) handleMediaSegmentAdvertisement(segment *m3u8.MediaSegment, m3u8Host string) *m3u8.MediaSegment {
-	if segment == nil {
-		return nil
-	}
-	switch m3u8Host {
-	case "c1.rrcdnbf3.com":
-		if strings.Contains(segment.URI, "video/adjump") {
-			segment.Duration = 0
-			segment.URI = ""
-			return segment
+func (x *M3u8Controller) handleGuessAdsUrl(segments []*m3u8.MediaSegment) []string {
+	var sum = 0
+	var tmpLength = 0
+	var lengthMap = make(map[int][]string, 0)
+	for _, segment := range segments {
+		if segment == nil {
+			continue
 		}
-	case "debug.rrcdnbf3.com":
-		if strings.Contains(segment.URI, "video/adjump") {
-			segment.Duration = 0
-			segment.URI = ""
-			return segment
+		tmpLength = len(segment.URI)
+		if _, ok := lengthMap[tmpLength]; !ok {
+			lengthMap[tmpLength] = make([]string, 0)
+		}
+		lengthMap[tmpLength] = append(lengthMap[tmpLength], segment.URI)
+		sum += 1
+	}
+	var minMapKey = 0
+	var minLength = math.MaxInt
+	for i, urls := range lengthMap {
+
+		log.Println(fmt.Sprintf("[stat] Url length: %d, count: %d, percent: %.2f%%, total:%d", i, len(urls), float64(100.0*len(urls)/sum), sum))
+
+		// 统计的URL长度为最小，且比例不超过5%，则认为是广告，不然视频都没法看了
+		if len(urls) <= minLength && (100.0*len(urls)/sum < 5) {
+			minLength = len(urls)
+			minMapKey = i
 		}
 	}
 
-	return segment
+	if v, ok := lengthMap[minMapKey]; ok {
+		return v
+	}
+	return make([]string, 0)
 }
