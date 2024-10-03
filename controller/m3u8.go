@@ -83,12 +83,17 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 			mediapl.Key.URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(x.handleM3u8PlayListUrl(mediapl.Key.URI, m3u8Url)))
 		}
 		for idx, val := range mediapl.Segments {
+			// 过滤广告URL
 			val = x.handleMediaSegmentAdvertisement(val, m3u8Host)
 			if val == nil {
 				continue
 			}
+			// 修正URL路径带域名
 			val.URI = x.handleM3u8PlayListUrl(val.URI, m3u8Url)
-			mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
+			// 设置代理URL，如果URL空（广告过滤会设置为空）则调过
+			if len(val.URI) > 0 {
+				mediapl.Segments[idx].URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(val.URI))
+			}
 			// 这里不设置nil会导致出现两个EXT-X-KEY字段
 			val.Key = nil
 		}
@@ -134,6 +139,9 @@ func (x *M3u8Controller) base64DecodingX(q string) string {
 }
 
 func (x *M3u8Controller) handleM3u8PlayListUrl(playUrl, m3u8Url string) string {
+	if len(playUrl) == 0 {
+		return playUrl
+	}
 	if util.IsHttpUrl(playUrl) {
 		return playUrl
 	}
@@ -267,14 +275,14 @@ func (x *M3u8Controller) handleMediaSegmentAdvertisement(segment *m3u8.MediaSegm
 	switch m3u8Host {
 	case "c1.rrcdnbf3.com":
 		if strings.Contains(segment.URI, "video/adjump") {
-			segment.Duration = 0.200
-			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts?fuck-ads"
+			segment.Duration = 0
+			segment.URI = ""
 			return segment
 		}
 	case "debug.rrcdnbf3.com":
 		if strings.Contains(segment.URI, "video/adjump") {
-			segment.Duration = 0.200
-			segment.URI = "https://c1.rrcdnbf3.com/video/buguniao/HD/0000652.ts?fuck-ads"
+			segment.Duration = 0
+			segment.URI = ""
 			return segment
 		}
 	}
