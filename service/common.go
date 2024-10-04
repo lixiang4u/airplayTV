@@ -38,6 +38,10 @@ func HandleUrlCorsProxy(m3u8Url string) string {
 		log.Println("[Head Url Error]", m3u8Url, err.Error())
 		return m3u8Url
 	}
+	if len(resp.Header.Get("x-amz-request-id")) > 0 {
+		// 破逼ctyun为什么返回amz头
+		return m3u8Url
+	}
 	log.Println("[AccessControlAllowOrigin]", resp.Header.Get(headers.AccessControlAllowOrigin))
 	if resp.Header.Get(headers.AccessControlAllowOrigin) == "*" {
 		return m3u8Url
