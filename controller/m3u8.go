@@ -84,13 +84,19 @@ func (x *M3u8Controller) handleM3u8Url(ctx *gin.Context, m3u8Url string, m3u8Buf
 		if mediapl.Key != nil && len(mediapl.Key.URI) > 0 {
 			mediapl.Key.URI = fmt.Sprintf(proxyStreamUrl, x.base64EncodingX(x.handleM3u8PlayListUrl(mediapl.Key.URI, m3u8Url)))
 		}
+		var duration = 0.0
 		var adsUrls = x.handleGuessAdsUrl(mediapl.Segments)
+		if len(adsUrls) > 0 {
+			log.Println("[Contains Ads Url]", len(adsUrls))
+		}
 		for idx, val := range mediapl.Segments {
 			if val == nil {
 				continue
 			}
+			duration += val.Duration
 			// 过滤广告URL
 			if slices.Contains(adsUrls, val.URI) {
+				log.Println("[adsUrls]", duration, val.URI)
 				val.Duration = 0
 				val.URI = ""
 			}
