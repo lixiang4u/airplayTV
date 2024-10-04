@@ -42,5 +42,5 @@ func HandleUrlCorsProxy(m3u8Url string) string {
 	if resp.Header.Get(headers.AccessControlAllowOrigin) == "*" {
 		return m3u8Url
 	}
-	return fmt.Sprintf("%s%s", m3u8pAirplayUrl, m3u8Url)
+	return fmt.Sprintf(m3u8pAirplayUrl, m3u8Url)
 }
