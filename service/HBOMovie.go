@@ -4,12 +4,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dop251/goja"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -293,13 +295,13 @@ func (x *HBOMovie) handleEncryptUrl(playUrl string, playerAAA gjson.Result) stri
 		return true
 	})
 
-	log.Println("[playServer]", playServer)
-	log.Println("[parse]", parse)
-	log.Println("[playFrom]", playFrom)
-	log.Println("[playUrl]", playUrl)
+	//log.Println("[playServer]", playServer)
+	//log.Println("[parse]", parse)
+	//log.Println("[playFrom]", playFrom)
+	//log.Println("[playUrl]", playUrl)
 
 	// 获取配置
-	log.Println("[GET]", fmt.Sprintf("%s%s", parse, playUrl))
+	//log.Println("[GET]", fmt.Sprintf("%s%s", parse, playUrl))
 	b, err = x.getHttpWrapper().Get(fmt.Sprintf("%s%s", parse, playUrl))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
@@ -317,24 +319,27 @@ func (x *HBOMovie) handleEncryptUrl(playUrl string, playerAAA gjson.Result) stri
 		return ""
 	}
 
-	log.Println("[config.url]", configJson.Get("url"))
+	//log.Println("[config.url]", configJson.Get("url"))
+	//log.Println("【uid】", configJson.Get("config").Get("uid").String())
 
-	log.Println("【uid】", configJson.Get("config").Get("uid").String())
-
-	// '2890' + ConFig['config']['uid'] + 'tB959C'
-	bytes, err := util.AesDecrypt(
-		[]byte(configJson.Get("url").String()),
-		[]byte(fmt.Sprintf("2890%stB959C", configJson.Get("config").Get("uid").String())),
-		[]byte("2F131BE91247866E"),
-	)
+	tmpUrl, err := x.fuckCryptoJSDecode(configJson.Get("config").Get("uid").String(), configJson.Get("url").String())
 	if err != nil {
 		log.Println("[AesDecrypt.Error]", err.Error())
 		return ""
 	}
 
-	log.Println("[AesDecrypt.Url]", string(bytes)[:50])
+	//log.Println("[jsDecode]", tmpUrl)
 
-	return ""
+	//header, resp, err := httpWrapper.GetResponse(tmpUrl)
+	//if err != nil {
+	//	log.Println("[内容获取失败]", err.Error())
+	//	return ""
+	//}
+	//
+	//log.Println("[Resp]", string(resp))
+	//log.Println("[header]", util.ToJSON(header, true))
+
+	return tmpUrl
 }
 
 func (x *HBOMovie) getHttpWrapper() *util.HttpWrapper {
@@ -344,4 +349,25 @@ func (x *HBOMovie) getHttpWrapper() *util.HttpWrapper {
 	httpWrapper.SetHeader(headers.UserAgent, ua)
 	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
 	return &httpWrapper
+}
+
+func (x *HBOMovie) fuckCryptoJSDecode(uid, data string) (string, error) {
+	var scriptBuff = append(util.FileReadAllBuf(filepath.Join(util.AppPath(), "app/js/NotGm.js")))
+	vm := goja.New()
+	_, err := vm.RunString(string(scriptBuff))
+	if err != nil {
+		log.Println("[LoadGojaError]", err.Error())
+		return "", err
+	}
+
+	var fuckCryptoDecode func(uid, data string) string
+	err = vm.ExportTo(vm.Get("fuckCryptoDecode"), &fuckCryptoDecode)
+	if err != nil {
+		log.Println("[ExportGojaFnError]", err.Error())
+		return "", err
+	}
+
+	var result = fuckCryptoDecode(uid, data)
+
+	return result, nil
 }
