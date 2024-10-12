@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/lixiang4u/airplayTV/model"
@@ -15,11 +16,12 @@ import (
 )
 
 var (
-	hboHost      = "https://hbottv.com"
-	hboTagUrl    = "https://hbottv.com/index.php/api/vod"
-	hboSearchUrl = "https://hbottv.com/vod/v1/search?wd=%s&limit=20&page=%d"
-	hboDetailUrl = "https://hbottv.com/detail/%s.html"
-	hboPlayUrl   = "https://hbottv.com/vod/v1/info?id=%s&tid=%s"
+	hboHost            = "https://hbottv.com"
+	hboTagUrl          = "https://hbottv.com/index.php/api/vod"
+	hboSearchUrl       = "https://hbottv.com/vod/v1/search?wd=%s&limit=20&page=%d"
+	hboDetailUrl       = "https://hbottv.com/detail/%s.html"
+	hboPlayUrl         = "https://hbottv.com/play/%s.html"
+	hboPlayerConfigUrl = "https://hbottv.com/static/js/playerconfig.js?t=20241012"
 )
 
 //========================================================================
@@ -206,46 +208,140 @@ func (x *HBOMovie) hboVideoSource(sid, vid string) model.Video {
 	log.Println("[sid]", sid)
 	log.Println("[vid]", vid)
 
-	var tmpSourceIdList = strings.Split(sid, "_")
-	if len(tmpSourceIdList) != 2 {
-		log.Println("[参数错误s]", sid)
-		return video
-	}
+	var httpWrapper = util.HttpWrapper{}
+	httpWrapper.SetHeader(headers.Origin, hboHost)
+	httpWrapper.SetHeader(headers.Referer, hboHost)
+	httpWrapper.SetHeader(headers.UserAgent, ua)
+	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
 
-	var tmpVideoIdList = strings.Split(vid, "_")
-	if len(tmpVideoIdList) != 2 {
-		log.Println("[参数错误v]", vid)
-		return video
-	}
-
-	b, err := x.httpWrapper.Get(fmt.Sprintf(hboDetailUrl, tmpVideoIdList[0], tmpVideoIdList[1]))
+	b, err := httpWrapper.Get(fmt.Sprintf(hboPlayUrl, sid))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return video
 	}
 
-	var result = gjson.ParseBytes(b)
+	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\S+)</script>`)
+	var result = gjson.Parse(findJson)
+	video.Source = result.Get("url").String()
+	video.Url = result.Get("url").String()
 
-	video.Name = result.Get("data").Get("vod_name").String()
-	video.Thumb = result.Get("data").Get("vod_pic").String()
+	var _type = result.Get("encrypt").Int()
+	switch _type {
+	case 1:
+		video.Url = url.QueryEscape(video.Url)
+		break
+	case 2:
+		tmpBuff, _ := base64.StdEncoding.DecodeString(video.Url)
+		video.Url, _ = url.QueryUnescape(string(tmpBuff))
+		break
+	default:
+		break
+	}
 
-	result.Get("data").Get("vod_sources").ForEach(func(key, value gjson.Result) bool {
+	video.Url = x.handleEncryptUrl(video.Url, result)
+	video.Type = util.GuessVideoType(video.Url)
 
-		if value.Get("source_id").String() == tmpSourceIdList[0] && value.Get("vod_play_list").Get("url_count").Int() > 0 {
-			value.Get("vod_play_list").Get("urls").ForEach(func(key, value gjson.Result) bool {
+	return video
+}
 
-				if tmpSourceIdList[1] == value.Get("nid").String() {
-					video.Url = value.Get("url").String()
-					video.Source = value.Get("url").String()
-					video.Type = util.GuessVideoType(video.Source)
-				}
+func (x *HBOMovie) handleEncryptUrl(playUrl string, playerAAA gjson.Result) string {
 
-				return true
-			})
+	var parse = ""
+	var playServer = playerAAA.Get("server").String()
+	var playFrom = playerAAA.Get("from").String()
+	if playServer == "no" {
+		playServer = ""
+	}
+
+	// 获取配置
+	var httpWrapper = util.HttpWrapper{}
+	httpWrapper.SetHeader(headers.Origin, hboHost)
+	httpWrapper.SetHeader(headers.Referer, hboHost)
+	httpWrapper.SetHeader(headers.UserAgent, ua)
+
+	b, err := httpWrapper.Get(hboPlayerConfigUrl)
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return ""
+	}
+	var jsText = string(b)
+	var findPlayerConfig = util.SimpleRegEx(jsText, `MacPlayerConfig=(\S+);`)
+	var findPlayerList = util.SimpleRegEx(jsText, `MacPlayerConfig.player_list=(\S+),MacPlayerConfig.downer_list`)
+	var findServerList = util.SimpleRegEx(jsText, `MacPlayerConfig.server_list=(\S+);`)
+
+	var playerConfigJson = gjson.Parse(findPlayerConfig)
+	var playerListJson = gjson.Parse(findPlayerList)
+	var serverListJson = gjson.Parse(findServerList)
+
+	serverListJson.ForEach(func(key, value gjson.Result) bool {
+		if playServer == key.String() {
+			playServer = value.Get("des").String()
 		}
-
 		return true
 	})
 
-	return video
+	playerListJson.ForEach(func(key, value gjson.Result) bool {
+		if playFrom == key.String() {
+			if value.Get("ps").String() == "1" {
+				parse = value.Get("parse").String()
+				if value.Get("parse").String() == "" {
+					parse = playerConfigJson.Get("parse").String()
+				}
+				playFrom = "parse"
+			}
+		}
+		return true
+	})
+
+	log.Println("[playServer]", playServer)
+	log.Println("[parse]", parse)
+	log.Println("[playFrom]", playFrom)
+	log.Println("[playUrl]", playUrl)
+
+	// 获取配置
+	log.Println("[GET]", fmt.Sprintf("%s%s", parse, playUrl))
+	b, err = x.getHttpWrapper().Get(fmt.Sprintf("%s%s", parse, playUrl))
+	if err != nil {
+		log.Println("[内容获取失败]", err.Error())
+		return ""
+	}
+
+	//log.Println("[XCSDFDF]", string(b))
+
+	//var findConfig = util.SimpleRegEx(string(b), `var config = ([\S\s]+)YKQ.start();`)
+	var findConfig = util.SimpleRegEx(string(b), `let ConFig = (\{[\s\S]*?\}),box = `)
+	//log.Println("[findConfig]", findConfig)
+	var configJson = gjson.Parse(findConfig)
+	if !configJson.Get("url").Exists() {
+		log.Println("[config.parse.error]")
+		return ""
+	}
+
+	log.Println("[config.url]", configJson.Get("url"))
+
+	log.Println("【uid】", configJson.Get("config").Get("uid").String())
+
+	// '2890' + ConFig['config']['uid'] + 'tB959C'
+	bytes, err := util.AesDecrypt(
+		[]byte(configJson.Get("url").String()),
+		[]byte(fmt.Sprintf("2890%stB959C", configJson.Get("config").Get("uid").String())),
+		[]byte("2F131BE91247866E"),
+	)
+	if err != nil {
+		log.Println("[AesDecrypt.Error]", err.Error())
+		return ""
+	}
+
+	log.Println("[AesDecrypt.Url]", string(bytes)[:50])
+
+	return ""
+}
+
+func (x *HBOMovie) getHttpWrapper() *util.HttpWrapper {
+	var httpWrapper = util.HttpWrapper{}
+	httpWrapper.SetHeader(headers.Origin, hboHost)
+	httpWrapper.SetHeader(headers.Referer, hboHost)
+	httpWrapper.SetHeader(headers.UserAgent, ua)
+	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
+	return &httpWrapper
 }
