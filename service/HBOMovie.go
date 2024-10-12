@@ -20,7 +20,7 @@ import (
 var (
 	hboHost            = "https://hbottv.com"
 	hboTagUrl          = "https://hbottv.com/index.php/api/vod"
-	hboSearchUrl       = "https://hbottv.com/vod/v1/search?wd=%s&limit=20&page=%d"
+	hboSearchUrl       = "https://hbottv.com/vodsearch/%s----------%d---.html"
 	hboDetailUrl       = "https://hbottv.com/detail/%s.html"
 	hboPlayUrl         = "https://hbottv.com/play/%s.html"
 	hboPlayerConfigUrl = "https://hbottv.com/static/js/playerconfig.js?t=20241012"
@@ -121,33 +121,44 @@ func (x *HBOMovie) hboListByTag(tagName, page string) model.Pager {
 }
 
 func (x *HBOMovie) hboListBySearch(query, page string) model.Pager {
-	var pager = model.Pager{}
-	pager.Limit = 20
+	var pager = model.Pager{
+		Limit:   10,
+		Current: util.HandlePageNumber(page),
+		Total:   0,
+	}
 
-	b, err := x.httpWrapper.Get(fmt.Sprintf(hboSearchUrl, query, util.HandlePageNumber(page)))
+	b, err := x.getHttpWrapper().Get(fmt.Sprintf(hboSearchUrl, query, pager.Current))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
 	}
 
-	var result = gjson.ParseBytes(b)
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return pager
+	}
 
-	pager.Total = int(result.Get("data").Get("Total").Int())
-	pager.Current = int(result.Get("data").Get("Page").Int())
+	doc.Find(".page-info a").Each(func(i int, selection *goquery.Selection) {
+		if util.StringToInt(selection.Text())*pager.Limit >= pager.Total {
+			pager.Total = util.StringToInt(selection.Text())*pager.Limit + 1
+		}
+	})
 
-	result.Get("data").Get("List").ForEach(func(key, value gjson.Result) bool {
+	doc.Find(".border-box .public-list-box").Each(func(i int, selection *goquery.Selection) {
+		tmpUrl, _ := selection.Find(".time-title").Attr("href")
+		tmpThumb, _ := selection.Find(".gen-movie-img").Attr("data-src")
+
 		pager.List = append(pager.List, model.MovieInfo{
-			Id:    fmt.Sprintf("%s_%s", value.Get("vod_id").String(), value.Get("type_id").String()),
-			Name:  value.Get("vod_name").String(),
-			Thumb: value.Get("vod_pic").String(),
-			Intro: value.Get("vod_blurb").String(),
-			Url:   fmt.Sprintf(hboDetailUrl, value.Get("vod_id").String(), value.Get("type_id").String()),
-			//Actors:     "",
-			//Tag:        "",
-			//Resolution: "",
-			//Links:      nil,
+			Id:         util.SimpleRegEx(tmpUrl, `(\d+)`),
+			Name:       strings.TrimSpace(selection.Find(".time-title").Text()),
+			Thumb:      tmpThumb,
+			Url:        tmpUrl,
+			Actors:     "",
+			Tag:        strings.TrimSpace(selection.Find(".public-prt").Text()),
+			Resolution: strings.TrimSpace(selection.Find(".public-prt").Text()),
+			Links:      nil,
 		})
-		return true
 	})
 
 	return pager
@@ -156,13 +167,7 @@ func (x *HBOMovie) hboListBySearch(query, page string) model.Pager {
 func (x *HBOMovie) hboVideoDetail(id string) model.MovieInfo {
 	var info = model.MovieInfo{Id: id}
 
-	var httpWrapper = util.HttpWrapper{}
-	httpWrapper.SetHeader(headers.Origin, hboHost)
-	httpWrapper.SetHeader(headers.Referer, hboHost)
-	httpWrapper.SetHeader(headers.UserAgent, ua)
-	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
-
-	b, err := httpWrapper.Get(fmt.Sprintf(hboDetailUrl, id))
+	b, err := x.getHttpWrapper().Get(fmt.Sprintf(hboDetailUrl, id))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return info
@@ -207,16 +212,7 @@ func (x *HBOMovie) hboVideoDetail(id string) model.MovieInfo {
 func (x *HBOMovie) hboVideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Vid: vid}
 
-	log.Println("[sid]", sid)
-	log.Println("[vid]", vid)
-
-	var httpWrapper = util.HttpWrapper{}
-	httpWrapper.SetHeader(headers.Origin, hboHost)
-	httpWrapper.SetHeader(headers.Referer, hboHost)
-	httpWrapper.SetHeader(headers.UserAgent, ua)
-	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
-
-	b, err := httpWrapper.Get(fmt.Sprintf(hboPlayUrl, sid))
+	b, err := x.getHttpWrapper().Get(fmt.Sprintf(hboPlayUrl, sid))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return video
