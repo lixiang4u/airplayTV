@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
 	"github.com/tidwall/gjson"
@@ -149,47 +150,51 @@ func (x *HBOMovie) hboListBySearch(query, page string) model.Pager {
 }
 
 func (x *HBOMovie) hboVideoDetail(id string) model.MovieInfo {
-	var info = model.MovieInfo{}
+	var info = model.MovieInfo{Id: id}
 
-	var tmpList = strings.Split(id, "_")
-	if len(tmpList) != 2 {
-		log.Println("[参数错误]", id)
-		return info
-	}
+	var httpWrapper = util.HttpWrapper{}
+	httpWrapper.SetHeader(headers.Origin, hboHost)
+	httpWrapper.SetHeader(headers.Referer, hboHost)
+	httpWrapper.SetHeader(headers.UserAgent, ua)
+	httpWrapper.SetHeader(headers.Referer, "https://hbottv.com/vodshow/1-----------.html")
 
-	b, err := x.httpWrapper.Get(fmt.Sprintf(hboDetailUrl, tmpList[0], tmpList[1]))
+	b, err := httpWrapper.Get(fmt.Sprintf(hboDetailUrl, id))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return info
 	}
 
-	var result = gjson.ParseBytes(b)
+	//log.Println("[HTML]", string(b))
+	//util.FileWriteAllBuf("./aaaaaa.html", b)
 
-	info.Id = fmt.Sprintf("%s_%s", result.Get("data").Get("vod_id").String(), result.Get("data").Get("type_id").String())
-	info.Name = result.Get("data").Get("vod_name").String()
-	info.Thumb = result.Get("data").Get("vod_pic").String()
-	info.Intro = result.Get("data").Get("vod_content").String()
-	info.Url = fmt.Sprintf(hboDetailUrl, result.Get("data").Get("vod_id").String(), result.Get("data").Get("type_id").String())
-	info.Actors = result.Get("data").Get("vod_content").String()
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(b)))
+	if err != nil {
+		log.Println("[文档解析失败]", err.Error())
+		return info
+	}
 
-	result.Get("data").Get("vod_sources").ForEach(func(key, value gjson.Result) bool {
+	info.Name = doc.Find(".slide-info-title").Text()
+	info.Thumb, _ = doc.Find(".vod-detail .detail-pic img").Attr("data-src")
+	info.Intro = doc.Find(".vod-detail .switch-box #height_limit").Text()
+	info.Url = fmt.Sprintf(hboDetailUrl, id)
 
-		var tmpSourceId = value.Get("source_id").String()
-		var tmpGroup = value.Get("source_name").String()
-		if value.Get("vod_play_list").Get("url_count").Int() > 0 {
-			value.Get("vod_play_list").Get("urls").ForEach(func(key, value gjson.Result) bool {
+	var groupList = make([]string, 0)
+	doc.Find(".anthology .anthology-tab a").Each(func(i int, selection *goquery.Selection) {
+		groupList = append(groupList, strings.TrimSpace(selection.Text()))
+	})
 
-				info.Links = append(info.Links, model.Link{
-					Id:    fmt.Sprintf("%s_%s", tmpSourceId, value.Get("nid").String()),
-					Name:  value.Get("name").String(),
-					Url:   value.Get("url").String(),
-					Group: tmpGroup,
-				})
-				return true
+	doc.Find(".anthology .anthology-list .anthology-list-box").Each(func(i int, selection *goquery.Selection) {
+		var tmpGroup = groupList[i]
+		selection.Find("li").Each(func(i int, selection *goquery.Selection) {
+			tmpUrl, _ := selection.Find("a").Attr("href")
+			tmpName := strings.TrimSpace(selection.Find("a").Text())
+			info.Links = append(info.Links, model.Link{
+				Id:    util.SimpleRegEx(tmpUrl, `(\d+-\d+-\d+)`),
+				Name:  tmpName,
+				Url:   tmpUrl,
+				Group: tmpGroup,
 			})
-		}
-
-		return true
+		})
 	})
 
 	return info
