@@ -107,7 +107,7 @@ func (x *HBOMovie) hboListByTag(tagName, page string) model.Pager {
 			Id:    value.Get("vod_id").String(),
 			Name:  value.Get("vod_name").String(),
 			Thumb: value.Get("vod_pic").String(),
-			Intro: value.Get("vod_blurb").String(),
+			Intro: strings.TrimSpace(value.Get("vod_blurb").String()),
 			//Url:   fmt.Sprintf(hboDetailUrl, value.Get("vod_id").String(), value.Get("type_id").String()),
 			//Actors:     "",
 			Tag: value.Get("vod_class").String(),
@@ -184,7 +184,7 @@ func (x *HBOMovie) hboVideoDetail(id string) model.MovieInfo {
 
 	info.Name = doc.Find(".slide-info-title").Text()
 	info.Thumb, _ = doc.Find(".vod-detail .detail-pic img").Attr("data-src")
-	info.Intro = doc.Find(".vod-detail .switch-box #height_limit").Text()
+	info.Intro = strings.TrimSpace(doc.Find(".vod-detail .switch-box #height_limit").Text())
 	info.Url = fmt.Sprintf(hboDetailUrl, id)
 
 	var groupList = make([]string, 0)
