@@ -10,6 +10,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/zc310/headers"
 	"log"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -207,7 +208,7 @@ func (x *MYDMovie) _VideoDetail(id string) model.MovieInfo {
 func (x *MYDMovie) _VideoSource(sid, vid string) model.Video {
 	var video = model.Video{Id: sid, Source: sid, Vid: vid}
 
-	b, err := x.httpWrapper.Get(fmt.Sprintf(mydPlayUrl, sid))
+	h, b, err := x.httpWrapper.GetResponse(fmt.Sprintf(mydPlayUrl, sid))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return video
@@ -237,13 +238,13 @@ func (x *MYDMovie) _VideoSource(sid, vid string) model.Video {
 	}
 
 	video.Source = result.Get("url").String()
-	video.Url = x.handleEncryptUrl(fmt.Sprintf(mydPlayFrameUrl, _type, video.Url), result)
+	video.Url = x.handleEncryptUrl(fmt.Sprintf(mydPlayFrameUrl, _type, video.Url), result, h)
 	video.Type = util.GuessVideoType(video.Url)
 
 	return video
 }
 
-func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result) string {
+func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result, header http.Header) string {
 	log.Println("[playFrameUrl]", playFrameUrl)
 
 	var parse = ""
@@ -290,10 +291,14 @@ func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result)
 	})
 
 	// MacPlayer.Parse + MacPlayer.PlayUrl
-	log.Println("[player.request.url]", fmt.Sprintf("%s/%s%s", strings.TrimRight(mydHost, "/"), parse, playUrl))
+	var reqUrl = fmt.Sprintf("%s/%s%s", strings.TrimRight(mydHost, "/"), strings.TrimLeft(parse, "/"), playUrl)
+	log.Println("[player.request.url]", reqUrl)
+
+	// 需要带Cookie
+	x.httpWrapper.SetHeader(headers.Cookie, header.Get("Set-Cookie"))
 
 	// 获取配置
-	b, err = x.httpWrapper.Get(fmt.Sprintf("%s/%s%s", strings.TrimRight(mydHost, "/"), parse, playUrl))
+	b, err = x.httpWrapper.Get(reqUrl)
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return ""
