@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	url2 "net/url"
 	"os"
 	"path/filepath"
@@ -70,4 +71,16 @@ func FileReadAll(filename string) ([]byte, error) {
 func FileReadAllBuf(filename string) []byte {
 	buf, _ := FileReadAll(filename)
 	return buf
+}
+
+func FileWriteAllBuf(filename string, buf []byte) error {
+	fi, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+	_, err = fi.Write(buf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
