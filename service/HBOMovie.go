@@ -218,7 +218,7 @@ func (x *HBOMovie) hboVideoSource(sid, vid string) model.Video {
 		return video
 	}
 
-	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\S+)</script>`)
+	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\{[\s\S]*?\})</script>`)
 	var result = gjson.Parse(findJson)
 	video.Source = result.Get("url").String()
 	video.Url = result.Get("url").String()

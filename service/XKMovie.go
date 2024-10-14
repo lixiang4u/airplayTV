@@ -223,7 +223,7 @@ func (x *XKMovie) nnVideoSource(sid, vid string) model.Video {
 	video.Name, _ = doc.Find(".stui-content__desc").Find(".pic").Attr("title")
 	video.Thumb, _ = doc.Find(".stui-content__desc").Find(".img-responsive").Attr("src")
 
-	var findJson = util.SimpleRegEx(respHtml, `player_aaaa=(\S+)</script>`)
+	var findJson = util.SimpleRegEx(respHtml, `player_aaaa=(\{[\s\S]*?\})</script>`)
 	var result = gjson.Parse(findJson)
 	video.Url = result.Get("url").String()
 	video.Source = result.Get("url").String()
