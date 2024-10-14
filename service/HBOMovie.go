@@ -76,7 +76,6 @@ func (x *HBOMovie) hboListByTag(tagName, page string) model.Pager {
 
 	// 1728443104
 	var ts = fmt.Sprintf("%d", time.Now().Unix())
-	log.Println("[TS]", ts)
 	var v = url.Values{}
 	v.Add("type", "1")
 	v.Add("class", "")
