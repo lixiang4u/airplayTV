@@ -220,7 +220,8 @@ func (x *MYDMovie) _VideoSource(sid, vid string) model.Video {
 	//	return info
 	//}
 
-	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\S+)</script>`)
+	var findJson = util.SimpleRegEx(string(b), `player_aaaa=(\{[\s\S]*?\})</script>`)
+	log.Println("[player_aaaa]", findJson)
 	var result = gjson.Parse(findJson)
 	video.Url = result.Get("url").String()
 
