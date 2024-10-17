@@ -537,7 +537,7 @@ func isWaf(html string) []byte {
 		return nil
 	}
 
-	log.Println("[=========>]", fmt.Sprintf("%s%s", util.HandleHost(czHost), f[1]))
+	//log.Println("[=========>]", fmt.Sprintf("%s%s", util.HandleHost(czHost), f[1]))
 
 	resp, err := http.Get(fmt.Sprintf("%s%s", util.HandleHost(czHost), f[1]))
 	if err != nil {
@@ -549,7 +549,7 @@ func isWaf(html string) []byte {
 		log.Println("[IsWaf.resp.body]", err.Error())
 		return nil
 	}
-	log.Println("[IsWaf.error]", string(b))
+	//log.Println("[IsWaf.error]", string(b))
 	return b
 }
 
@@ -574,7 +574,7 @@ func (x *CZMovie) GetVerifyUrl() string {
 	regEx = regexp.MustCompile(`var key="(\w+)",value="(\w+)";`)
 	matchResult2 := regEx.FindStringSubmatch(string(b))
 	if len(matchResult2) < 3 {
-		log.Println("[匹配认证配置错误] response:", string(b))
+		log.Println("[匹配认证配置错误] ")
 		return ""
 	}
 	log.Println("[解析验证配置]", util.ToJSON(matchResult2, true))
@@ -582,7 +582,7 @@ func (x *CZMovie) GetVerifyUrl() string {
 	regEx = regexp.MustCompile(`c.get\(\"(\S+)\&key\=`)
 	matchResult3 := regEx.FindStringSubmatch(string(b))
 	if len(matchResult3) < 2 {
-		log.Println("[匹配认证地址错误] response:", string(b))
+		log.Println("[匹配认证地址错误] ")
 		return ""
 	}
 	log.Println("[解析验证地址]", util.ToJSON(matchResult3, true))
@@ -885,7 +885,7 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 
 	var isWebDriver bool
 	var screenshot []byte
-	var cookie string
+	//var cookie string
 	err := chromedp.Run(
 		ctx,
 		// click 56，290
@@ -907,8 +907,8 @@ func (x *CZMovie) fuckCfClearance(requestUrl string) string {
 		},
 	)
 
-	log.Println("[isWebDriver]", isWebDriver)
-	log.Println("[cookie]", cookie)
+	//log.Println("[isWebDriver]", isWebDriver)
+	//log.Println("[cookie]", cookie)
 
 	if err != nil {
 		log.Println("[chromedp.Run.Error]", err.Error())
