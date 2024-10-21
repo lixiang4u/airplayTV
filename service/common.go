@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	m3u8pUrl          = "http://106.15.56.178:38386/api/m3u8p?q=%s"
-	cloudflareUrl     = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s"
-	cloudflarePostUrl = "http://106.15.56.178:38386/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
+	m3u8pUrl          = "https://air.artools.cc/api/m3u8p?q=%s"
+	cloudflareUrl     = "https://air.artools.cc/api/cloudflare?q=%s&wait=%s"
+	cloudflarePostUrl = "https://air.artools.cc/api/cloudflare?q=%s&wait=%s&post=%s&headers=%s"
 	m3u8pAirplayUrl   = "https://air.artools.cc/api/m3u8p?q=%s"
 )
 

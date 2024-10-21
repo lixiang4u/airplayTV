@@ -272,9 +272,10 @@ func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContent
 		x.handleM3u8Stream(ctx, q)
 		break
 	default:
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"msg": fmt.Sprintf("无法解析(%s)", qContentType),
-		})
+		//ctx.JSON(http.StatusInternalServerError, gin.H{
+		//	"msg": fmt.Sprintf("无法解析(%s)", qContentType),
+		//})
+		x.handleM3u8Stream(ctx, q)
 		break
 	}
 
