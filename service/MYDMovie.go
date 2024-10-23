@@ -17,15 +17,13 @@ import (
 )
 
 var (
-	mydHost         = "https://myd04.com/"
+	mydHost         = "https://meiyd11.com/"
 	mydImageHost    = "https://www.mdzypic.com/"
-	mydTagUrl       = "https://myd04.com/vodshow/1--------%d---.html"
-	mydSearchUrl    = "https://myd04.com/vodsearch/%s----------%d---.html"
-	mydDetailUrl    = "https://myd04.com/voddetail/%s.html"
-	mydM3u8Url      = "https://nnyy.in/url.php"
-	mydPlayUrl      = "https://myd04.com/vodplay/%s.html"
-	mydPlayFrameUrl = "https://myd04.com/player/?type=%d&url=%s"
-	//mydPlayFrameUrl = "https://myd04.com/player/?type=1&url=https://v.cdnlz12.com/20240923/17088_8a1a7530/index.m3u8&token=23bae8bed3694acc42860719a84db8ef"
+	mydTagUrl       = "https://meiyd11.com/vodshow/1--------%d---.html"
+	mydSearchUrl    = "https://meiyd11.com/vodsearch/%s----------%d---.html"
+	mydDetailUrl    = "https://meiyd11.com/voddetail/%s.html"
+	mydPlayUrl      = "https://meiyd11.com/vodplay/%s.html"
+	mydPlayFrameUrl = "https://meiyd11.com/player/?type=%d&url=%s"
 )
 
 type MYDMovie struct {
@@ -257,7 +255,7 @@ func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result,
 	}
 
 	// 获取配置
-	b, err := x.httpWrapper.Get("https://myd04.com/static/js/playerconfig.js?t=20240923")
+	b, err := x.httpWrapper.Get("https://meiyd11.com/static/js/playerconfig.js?t=20240923")
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return ""
@@ -314,14 +312,14 @@ func (x *MYDMovie) handleEncryptUrl(playFrameUrl string, playerAAA gjson.Result,
 
 	log.Println("[config.url]", configJson.Get("url"), configJson.Get("id"))
 
-	// key来源：https://myd04.com/player/js/setting.js?v=4
-	//// https://myd04.com/static/js/playerconfig.js?t=20240923
+	// key来源：https://meiyd11.com/player/js/setting.js?v=4
+	//// https://meiyd11.com/static/js/playerconfig.js?t=20240923
 	return x.fuckRc4(configJson.Get("url").String(), "202205051426239465", 1)
 }
 
 func (x *MYDMovie) getPlayerConfig(playFrameUrl string) {
-	// 数据来源：https://myd04.com/static/js/playerconfig.js?t=20240923
-	b, err := x.httpWrapper.Get("https://myd04.com/static/js/playerconfig.js?t=20240923")
+	// 数据来源：https://meiyd11.com/static/js/playerconfig.js?t=20240923
+	b, err := x.httpWrapper.Get("https://meiyd11.com/static/js/playerconfig.js?t=20240923")
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return
