@@ -113,6 +113,7 @@ func NewRouter() *gin.Engine {
 
 	r.GET("/tesla/fullscreen", homeController.FullScreen)
 	r.GET("/api/m3u8p", m3u8Controller.Proxy)
+	r.HEAD("/api/m3u8p", m3u8Controller.Proxy)
 
 	r.GET("/ws", func(context *gin.Context) {
 		ws.Run(context.Writer, context.Request, nil)
