@@ -240,7 +240,7 @@ func (x *MYDMovie) _VideoSource(sid, vid string) model.Video {
 	video.Url = x.handleEncryptUrl(fmt.Sprintf(mydPlayFrameUrl, _type, video.Url), result, h)
 	video.Type = util.GuessVideoType(video.Url)
 	video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Url, x.movie.IsCache)
-	video.Url = fmt.Sprintf(m3u8pUrl, video.Url)
+	video.Url = fmt.Sprintf(m3u8pUrl, fmt.Sprintf("https://air.artools.cc/%s", strings.TrimLeft(video.Url, "/")))
 
 	return video
 }
