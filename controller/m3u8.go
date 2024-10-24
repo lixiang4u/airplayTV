@@ -201,6 +201,7 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 	}
 
 	var isRange = len(ctx.Request.Header.Get(headers.Range)) > 0
+	isRange = false // libmedia播放器暂不支持，不浪费流量了
 	if isRange {
 		// 透传请求头，如果请求是Range，则很有效
 		for key, values := range ctx.Request.Header {
