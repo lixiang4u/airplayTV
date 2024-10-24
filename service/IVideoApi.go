@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
@@ -20,6 +21,23 @@ type IVideoApi interface {
 	Source(sid, vid string) model.Video
 }
 
+func IsCtYunFileUrl(tmpUrl string) bool {
+	// https://media-tjwq-fy-home.tj3oss.ctyunxs.cn/FAMILYCLOUD/4839bf22-70c1-4d66-b6ba-58010898decd.mp4?x-amz-CLIENTTYPEIN=PC&AWSAccessKeyId=0Lg7dAq3ZfHvePP8DKEU&x-amz-limitrate=61440&response-content-type=video/mp4&x-amz-UID=300000534202485&response-content-disposition=attachment%3Bfilename%3D%22%E5%BC%82%E5%BD%A2%E5%A4%BA%E5%91%BD%E8%88%B02024.mp4%22%3Bfilename*%3DUTF-8%27%27%25E5%25BC%2582%25E5%25BD%25A2%25E5%25A4%25BA%25E5%2591%25BD%25E8%2588%25B02024.mp4&x-amz-OPERID=300000534202632&x-amz-CLIENTNETWORK=UNKNOWN&x-amz-CLOUDTYPEIN=FAMILY&Signature=EhN9jUkXb1cjMjWpXJlAneFsoNI%3D&Expires=1729761530&x-amz-FSIZE=3767239833&x-amz-UFID=324251161015832564
+	parsed, err := url.Parse(tmpUrl)
+	if err != nil {
+		return false
+	}
+	var tmpNameList = strings.Split(parsed.Host, ".")
+	if len(tmpNameList) <= 1 {
+		return false
+	}
+	var hostname = fmt.Sprintf("%s.%s", tmpNameList[len(tmpNameList)-2], tmpNameList[len(tmpNameList)-1])
+	if strings.ToLower(hostname) != "ctyunxs.cn" {
+		return false
+	}
+	return true
+}
+
 func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 	log.Println("[HandleSrcM3U8FileToLocal]", id, sourceUrl)
 	tmpUrl, err := url.Parse(sourceUrl)
@@ -29,6 +47,11 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 	// 如果是存在CORS切文件直接redirect后能播放的，使用如下处理
 	if util.StringInList(util.HandleHost(sourceUrl), util.RedirectConfig) {
 		return util.HandleUrlToCORS(sourceUrl)
+	}
+
+	// ctyun一般都是mp4文件
+	if IsCtYunFileUrl(sourceUrl) {
+		return sourceUrl
 	}
 
 	// 直接播放的地址
