@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 )
 
 type M3u8Controller struct {
@@ -190,7 +189,7 @@ func (x *M3u8Controller) handleResponseM3u8PlayList(ctx *gin.Context, q string, 
 	}
 
 	ctx.Header(headers.ContentType, "application/vnd.apple.mpegurl")
-	ctx.Header(headers.ContentDisposition, fmt.Sprintf("inline; filename=playlist%d.m3u8", time.Now().Unix()))
+	//ctx.Header(headers.ContentDisposition, fmt.Sprintf("inline; filename=playlist%d.m3u8", time.Now().Unix()))
 	_, _ = ctx.Writer.WriteString(playlist.String())
 }
 
@@ -200,7 +199,13 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 		return
 	}
-	resp2, err := http.DefaultClient.Do(req)
+
+	// 透传请求头，如果请求是Range，则很有效
+	for key, values := range ctx.Request.Header {
+		req.Header.Set(key, values[0])
+	}
+
+	resp2, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 		return
@@ -208,11 +213,12 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 	defer func() { _ = resp2.Body.Close() }()
 
 	var qContentType = strings.ToLower(resp2.Header.Get(headers.ContentType))
+	var respContentLength = util.StringToInt64(resp2.Header.Get(headers.ContentLength))
 
 	//bytes.NewReader()
 	// 小文件直接解析内容
 	var respReader io.Reader
-	if util.StringToInt(resp2.Header.Get(headers.ContentLength)) < 1024*800 {
+	if respContentLength < 1024*800 {
 		respBuff, err := io.ReadAll(resp2.Body)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
@@ -243,8 +249,11 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 		return
 	}
 
-	ctx.Header(headers.ContentType, qContentType)
-	_, _ = io.Copy(ctx.Writer, respReader)
+	// 返回目标地址返回的请求头，如果是Range则很有效
+	for key, values := range resp2.Header {
+		ctx.Header(key, values[0])
+	}
+	ctx.DataFromReader(resp2.StatusCode, respContentLength, qContentType, respReader, nil)
 }
 
 func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContentType string) {
