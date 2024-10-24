@@ -126,7 +126,7 @@ func (x *HttpWrapper) PostResponse(requestUrl, rawBody string) (map[string][]str
 	return resp.Header, b, err
 }
 
-func (x *HttpWrapper) Head(requestUrl string) (map[string][]string, error) {
+func (x *HttpWrapper) Head(requestUrl string) (http.Header, error) {
 	req, err := http.NewRequest("HEAD", requestUrl, nil)
 	if err != nil {
 		return nil, err

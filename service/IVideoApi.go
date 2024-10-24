@@ -4,10 +4,12 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/lixiang4u/airplayTV/model"
 	"github.com/lixiang4u/airplayTV/util"
+	"github.com/zc310/headers"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 // 定义视频源操作方法，支持多源站接入
@@ -39,6 +41,12 @@ func HandleSrcM3U8FileToLocal(id, sourceUrl string, isCache bool) string {
 		"yun.m3.c-zzy.online", // 这个需要特殊处理，返回的是m3u8数据，但是后缀是mp4
 		"vt1.doubanio.com",    //https://vt1.doubanio.com/202211281908/3009135258a3492c9c260af15c3c9027/view/movie/M/402970553.mp4
 	}) {
+		return sourceUrl
+	}
+
+	var httpWrapper = util.HttpWrapper{}
+	header, err := httpWrapper.Head(sourceUrl)
+	if err == nil && strings.ToLower(header.Get(headers.ContentType)) == "video/mp4" {
 		return sourceUrl
 	}
 
