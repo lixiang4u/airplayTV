@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -321,8 +322,35 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	video = handleVideoType(video)
 	//video.Url = HandleUrlCorsProxy(video.Url)
 	video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
+	video.Url = x.handleCtYunFileUrl(video.Url)
 
 	return video
+}
+
+func (x *CZMovie) base64EncodingX(q string) string {
+	return base64.StdEncoding.EncodeToString(
+		[]byte(util.ToJSON(
+			map[string]interface{}{"q": q},
+			false,
+		)),
+	)
+}
+
+func (x *CZMovie) handleCtYunFileUrl(tmpUrl string) string {
+	// https://media-tjwq-fy-home.tj3oss.ctyunxs.cn/FAMILYCLOUD/4839bf22-70c1-4d66-b6ba-58010898decd.mp4?x-amz-CLIENTTYPEIN=PC&AWSAccessKeyId=0Lg7dAq3ZfHvePP8DKEU&x-amz-limitrate=61440&response-content-type=video/mp4&x-amz-UID=300000534202485&response-content-disposition=attachment%3Bfilename%3D%22%E5%BC%82%E5%BD%A2%E5%A4%BA%E5%91%BD%E8%88%B02024.mp4%22%3Bfilename*%3DUTF-8%27%27%25E5%25BC%2582%25E5%25BD%25A2%25E5%25A4%25BA%25E5%2591%25BD%25E8%2588%25B02024.mp4&x-amz-OPERID=300000534202632&x-amz-CLIENTNETWORK=UNKNOWN&x-amz-CLOUDTYPEIN=FAMILY&Signature=EhN9jUkXb1cjMjWpXJlAneFsoNI%3D&Expires=1729761530&x-amz-FSIZE=3767239833&x-amz-UFID=324251161015832564
+	parsed, err := url.Parse(tmpUrl)
+	if err != nil {
+		return tmpUrl
+	}
+	var tmpNameList = strings.Split(parsed.Host, ".")
+	if len(tmpNameList) <= 1 {
+		return tmpUrl
+	}
+	var hostname = fmt.Sprintf("%s.%s", tmpNameList[len(tmpNameList)-2], tmpNameList[len(tmpNameList)-1])
+	if hostname != "ctyunxs.cn" {
+		return tmpUrl
+	}
+	return fmt.Sprintf(m3u8pUrl, x.base64EncodingX(tmpUrl))
 }
 
 func (x *CZMovie) czParseVideoSource(id, js string) (model.Video, error) {
