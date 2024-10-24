@@ -322,7 +322,7 @@ func (x *CZMovie) czVideoSource(sid, vid string) model.Video {
 	video = handleVideoType(video)
 	//video.Url = HandleUrlCorsProxy(video.Url)
 	video.Url = HandleSrcM3U8FileToLocal(video.Id, video.Source, x.movie.IsCache)
-	video.Url = x.handleCtYunFileUrl(video.Url)
+	//video.Url = x.handleCtYunFileUrl(video.Url)
 
 	return video
 }
