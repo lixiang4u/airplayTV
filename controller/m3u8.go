@@ -200,9 +200,12 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 		return
 	}
 
-	// 透传请求头，如果请求是Range，则很有效
-	for key, values := range ctx.Request.Header {
-		req.Header.Set(key, values[0])
+	var isRange = len(ctx.Request.Header.Get(headers.Range)) > 0
+	if isRange {
+		// 透传请求头，如果请求是Range，则很有效
+		for key, values := range ctx.Request.Header {
+			req.Header.Set(key, values[0])
+		}
 	}
 
 	resp2, err := http.DefaultTransport.RoundTrip(req)
@@ -249,11 +252,22 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 		return
 	}
 
-	// 返回目标地址返回的请求头，如果是Range则很有效
-	for key, values := range resp2.Header {
-		ctx.Header(key, values[0])
+	if isRange {
+		// 返回目标地址返回的请求头，如果是Range则很有效
+		for key, values := range resp2.Header {
+			if key == headers.ContentLength {
+				continue
+			}
+			ctx.Header(key, values[0])
+		}
+		ctx.DataFromReader(resp2.StatusCode, -1, qContentType, respReader, nil)
+
+	} else {
+		ctx.Header(headers.ContentType, qContentType)
+		_, _ = io.Copy(ctx.Writer, respReader)
+
 	}
-	ctx.DataFromReader(resp2.StatusCode, respContentLength, qContentType, respReader, nil)
+
 }
 
 func (x *M3u8Controller) handleResponseContentType(ctx *gin.Context, q, qContentType string) {
