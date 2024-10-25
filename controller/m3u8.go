@@ -209,7 +209,9 @@ func (x *M3u8Controller) handleM3u8Stream(ctx *gin.Context, q string) {
 		}
 	}
 
-	resp2, err := http.DefaultTransport.RoundTrip(req)
+	// RoundTrip 无法实现获取返回重定向内容
+	//resp2, err := http.DefaultTransport.RoundTrip(req)
+	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 		return
