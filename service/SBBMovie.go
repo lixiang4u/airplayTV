@@ -31,7 +31,7 @@ import (
 var (
 	sbbHost      = "https://www.subaibaiys.com"
 	sbbTagUrl    = "https://www.subaibaiys.com/new-movie/page/%d"
-	sbbSearchUrl = "https://www.subaibaiys.com/?s=%s"
+	sbbSearchUrl = "https://www.subaibaiys.com/page/%d?s=%s"
 	sbbDetailUrl = "https://www.subaibaiys.com/movie/%s.html"
 	sbbPlayUrl   = "https://www.subaibaiys.com/v_play/%s.html"
 )
@@ -144,7 +144,7 @@ func (x *SBBMovie) czListBySearch(query, page string) model.Pager {
 	//}
 	//b = x.btWafSearch(h, b, fmt.Sprintf(sbbSearchUrl, query, util.HandlePageNumber(page)))
 
-	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(sbbSearchUrl, query, util.HandlePageNumber(page)))
+	b, err := x.handleHttpRequestByM3u8p(fmt.Sprintf(sbbSearchUrl, util.HandlePageNumber(page), query))
 	if err != nil {
 		log.Println("[内容获取失败]", err.Error())
 		return pager
